@@ -1,0 +1,331 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with role and settings.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "roleId": { "type": "string", "description": "Reference to Role entity" },
+        "status": { "type": "string", "enum": ["active", "suspended", "pending"] },
+        "onboarded": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "deletedAt": { "type": "string", "format": "date-time" },
+        "settings": { "type": "object" }
+      },
+      "required": ["uid", "email", "displayName", "roleId", "status", "onboarded", "createdAt", "updatedAt"]
+    },
+    "Role": {
+      "title": "Role",
+      "description": "RBAC role definition.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "permissions": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "permissions", "createdAt"]
+    },
+    "Project": {
+      "title": "Project",
+      "description": "A project containing feature ideas and backlog.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "status": { "type": "string", "enum": ["Active", "Archived", "Draft"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "deletedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "ownerId", "status", "createdAt", "updatedAt"]
+    },
+    "ProjectSettings": {
+      "title": "ProjectSettings",
+      "description": "Specific settings for a project.",
+      "type": "object",
+      "properties": {
+        "theme": { "type": "string" },
+        "visibility": { "type": "string", "enum": ["private", "public", "team"] },
+        "aiConfig": { "type": "object" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["theme", "visibility", "aiConfig", "updatedAt"]
+    },
+    "ProjectSpecification": {
+      "title": "ProjectSpecification",
+      "description": "High-level project specs/PRD.",
+      "type": "object",
+      "properties": {
+        "content": { "type": "string" },
+        "version": { "type": "integer" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["content", "version", "createdBy", "createdAt"]
+    },
+    "WorkspaceModule": {
+      "title": "WorkspaceModule",
+      "description": "Enabled modules in the project workspace.",
+      "type": "object",
+      "properties": {
+        "moduleType": { "type": "string" },
+        "config": { "type": "object" },
+        "isEnabled": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["moduleType", "config", "isEnabled", "createdAt"]
+    },
+    "RoadmapVersion": {
+      "title": "RoadmapVersion",
+      "description": "A release version in the project roadmap.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "status": { "type": "string", "enum": ["Draft", "Planned", "Released"] },
+        "releaseDate": { "type": "string", "format": "date-time" },
+        "description": { "type": "string" },
+        "features": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "status", "features", "createdAt", "updatedAt"]
+    },
+    "Feature": {
+      "title": "Feature",
+      "description": "A detailed feature card.",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string" },
+        "roadmapVersionId": { "type": "string" },
+        "featureCode": { "type": "string" },
+        "title": { "type": "string" },
+        "status": { "type": "string", "enum": ["Pending", "In Progress", "Completed"] },
+        "priority": { "type": "string", "enum": ["Low", "Medium", "High", "Critical"] },
+        "problem": { "type": "string" },
+        "solution": { "type": "string" },
+        "why": { "type": "string" },
+        "nonTechnicalDescription": { "type": "string" },
+        "technicalDescription": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "deletedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["projectId", "featureCode", "title", "status", "priority", "createdAt", "updatedAt"]
+    },
+    "FeatureComment": {
+      "title": "FeatureComment",
+      "description": "A comment on a feature.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "content": { "type": "string" },
+        "type": { "type": "string", "enum": ["Question", "Decision", "Definition"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "content", "type", "createdAt", "updatedAt"]
+    },
+    "FeatureActivityLog": {
+      "title": "FeatureActivityLog",
+      "description": "Audit log for feature changes.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "action": { "type": "string" },
+        "changes": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "action", "changes", "createdAt"]
+    },
+    "Document": {
+      "title": "Document",
+      "description": "Project documentation.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "type": { "type": "string", "enum": ["PRD", "Guide", "API", "Other"] },
+        "currentVersionId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "deletedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "type", "createdAt", "updatedAt"]
+    },
+    "DocumentVersion": {
+      "title": "DocumentVersion",
+      "description": "A version of a document.",
+      "type": "object",
+      "properties": {
+        "content": { "type": "string" },
+        "versionNumber": { "type": "integer" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["content", "versionNumber", "createdBy", "createdAt"]
+    },
+    "ShowcaseContent": {
+      "title": "ShowcaseContent",
+      "description": "Content for the project showcase.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "mediaUrl": { "type": "string" },
+        "isPublic": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "description", "isPublic", "createdAt"]
+    },
+    "AIAgent": {
+      "title": "AIAgent",
+      "description": "Configured AI agent.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "modelId": { "type": "string" },
+        "systemPrompt": { "type": "string" },
+        "config": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "modelId", "systemPrompt", "config", "createdAt"]
+    },
+    "AIGeneration": {
+      "title": "AIGeneration",
+      "description": "Record of an AI generation.",
+      "type": "object",
+      "properties": {
+        "agentId": { "type": "string" },
+        "input": { "type": "string" },
+        "output": { "type": "string" },
+        "tokensUsed": { "type": "integer" },
+        "cost": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["agentId", "input", "output", "tokensUsed", "cost", "createdAt"]
+    },
+    "Asset": {
+      "title": "Asset",
+      "description": "Project asset.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "url": { "type": "string" },
+        "mimeType": { "type": "string" },
+        "size": { "type": "integer" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "url", "mimeType", "size", "createdAt", "updatedAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "User notification.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string" },
+        "isRead": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "message", "type", "isRead", "createdAt"]
+    },
+    "AdminSettings": {
+      "title": "AdminSettings",
+      "description": "Global admin settings.",
+      "type": "object",
+      "properties": {
+        "key": { "type": "string" },
+        "value": { "type": "object" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["key", "value", "updatedAt"]
+    },
+    "LLMPrompt": {
+      "title": "LLMPrompt",
+      "description": "Versioned LLM prompt.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "template": { "type": "string" },
+        "version": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "template", "version", "createdAt"]
+    },
+    "LLMRun": {
+      "title": "LLMRun",
+      "description": "Execution log of an LLM prompt.",
+      "type": "object",
+      "properties": {
+        "promptId": { "type": "string" },
+        "inputData": { "type": "object" },
+        "outputData": { "type": "object" },
+        "latency": { "type": "number" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["promptId", "inputData", "outputData", "latency", "status", "createdAt"]
+    },
+    "AILog": {
+      "title": "AILog",
+      "description": "Log of an AI task execution.",
+      "type": "object",
+      "properties": {
+        "taskType": { "type": "string" },
+        "params": { "type": "string" },
+        "status": { "type": "string" },
+        "userId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "result": { "type": "string" },
+        "latency": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["taskType", "params", "status", "userId", "timestamp"]
+    },
+    "SyncState": {
+      "title": "SyncState",
+      "description": "Client sync state.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "deviceId": { "type": "string" },
+        "lastSyncAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string" }
+      },
+      "required": ["userId", "deviceId", "lastSyncAt", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": { "schema": "UserProfile", "description": "User profiles" },
+    "/roles/{roleId}": { "schema": "Role", "description": "RBAC roles" },
+    "/projects/{projectId}": { "schema": "Project", "description": "Project documents" },
+    "/projects/{projectId}/settings/config": { "schema": "ProjectSettings", "description": "Project configuration" },
+    "/projects/{projectId}/specifications/{specId}": { "schema": "ProjectSpecification", "description": "Project specs" },
+    "/projects/{projectId}/modules/{moduleId}": { "schema": "WorkspaceModule", "description": "Workspace modules" },
+    "/projects/{projectId}/roadmap/{versionId}": { "schema": "RoadmapVersion", "description": "Roadmap versions (legacy path)" },
+    "/projects/{projectId}/versions/{versionId}": { "schema": "RoadmapVersion", "description": "Project versions" },
+    "/projects/{projectId}/features/{featureId}": { "schema": "Feature", "description": "Features" },
+    "/projects/{projectId}/features/{featureId}/comments/{commentId}": { "schema": "FeatureComment", "description": "Feature comments" },
+    "/projects/{projectId}/features/{featureId}/activity/{logId}": { "schema": "FeatureActivityLog", "description": "Feature activity logs" },
+    "/projects/{projectId}/documents/{docId}": { "schema": "Document", "description": "Project documents" },
+    "/projects/{projectId}/documents/{docId}/versions/{versionId}": { "schema": "DocumentVersion", "description": "Document versions" },
+    "/projects/{projectId}/showcase/{contentId}": { "schema": "ShowcaseContent", "description": "Showcase content" },
+    "/projects/{projectId}/assets/{assetId}": { "schema": "Asset", "description": "Project assets" },
+    "/ai/agents/{agentId}": { "schema": "AIAgent", "description": "AI agents" },
+    "/ai/generations/{genId}": { "schema": "AIGeneration", "description": "AI generation history" },
+    "/ai/prompts/{promptId}": { "schema": "LLMPrompt", "description": "LLM prompts" },
+    "/ai/runs/{runId}": { "schema": "LLMRun", "description": "LLM execution logs" },
+    "/ai_logs/{logId}": { "schema": "AILog", "description": "AI task execution logs" },
+    "/notifications/{notifId}": { "schema": "Notification", "description": "User notifications" },
+    "/admin/settings/{settingId}": { "schema": "AdminSettings", "description": "Global settings" },
+    "/sync/states/{stateId}": { "schema": "SyncState", "description": "Client sync states" }
+  }
+}

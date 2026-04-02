@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Premium Dark Theme Colors */
+  --color-background: #0a0a0a;
+  --color-surface: #141414;
+  --color-surface-hover: #1a1a1a;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-hover: rgba(255, 255, 255, 0.15);
+
+  /* Brand Colors */
+  --color-primary: #6366f1;
+  --color-primary-hover: #4f46e5;
+  --color-secondary: #f59e0b;
+  --color-secondary-hover: #d97706;
+
+  /* Status Colors */
+  --color-success: #10b981;
+  --color-error: #ef4444;
+  --color-warning: #f59e0b;
+  --color-info: #3b82f6;
+
+  /* Elevation & Shadows */
+  --shadow-premium: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
+
+  /* Radius */
+  --radius-card: 24px;
+  --radius-button: 12px;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-white font-sans antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors;
+  }
+}
+
+@layer utilities {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .glass {
+    @apply bg-surface/80 backdrop-blur-xl border border-white/10;
+  }
+
+  /* Markdown Styles */
+  .markdown-body h1 { @apply text-3xl font-black mb-6 mt-8 text-white tracking-tight; }
+  .markdown-body h2 { @apply text-2xl font-bold mb-4 mt-8 text-white border-b border-white/10 pb-2; }
+  .markdown-body h3 { @apply text-xl font-bold mb-3 mt-6 text-indigo-400; }
+  .markdown-body p { @apply text-gray-400 leading-relaxed mb-4 text-base; }
+  .markdown-body ul, .markdown-body ol { @apply mb-4 ml-6 space-y-2; }
+  .markdown-body ul { @apply list-disc; }
+  .markdown-body ol { @apply list-decimal; }
+  .markdown-body li { @apply text-gray-400; }
+  .markdown-body strong { @apply text-white font-bold; }
+  .markdown-body blockquote { @apply border-l-4 border-indigo-500/50 pl-4 italic text-gray-500 my-6; }
+  .markdown-body code { @apply bg-white/5 px-1.5 py-0.5 rounded font-mono text-sm text-indigo-300; }
+  .markdown-body pre { @apply bg-[#0d0d0d] p-4 rounded-2xl border border-white/5 overflow-x-auto my-6; }
+  .markdown-body pre code { @apply bg-transparent p-0 text-gray-300; }
+}
