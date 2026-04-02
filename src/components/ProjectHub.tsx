@@ -17,6 +17,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { Project } from '../types';
 import { cn } from '../lib/utils';
+import IntegrityBadge from './IntegrityBadge';
 
 interface ProjectHubProps {
   project: Project;
@@ -113,6 +114,16 @@ const modules = [
     bg: 'bg-gray-400/10',
     lastActivity: '1w ago',
     badge: 0
+  },
+  {
+    id: 'ui-architecture',
+    title: 'UI Architecture',
+    description: 'Pages, components & design system',
+    icon: LayoutIcon,
+    color: 'text-indigo-400',
+    bg: 'bg-indigo-400/10',
+    lastActivity: 'New',
+    badge: 0
   }
 ];
 
@@ -130,7 +141,8 @@ export default function ProjectHub({ project, onNavigate }: ProjectHubProps) {
       'agents': 'agents',
       'assets': 'assets',
       'settings': 'settings',
-      'roadmap': 'roadmap'
+      'roadmap': 'roadmap',
+      'ui-architecture': 'ui-architecture'
     };
 
     const target = routeMap[moduleId];
@@ -146,7 +158,10 @@ export default function ProjectHub({ project, onNavigate }: ProjectHubProps) {
       {/* Header */}
       <div className="p-6 lg:p-8 border-b border-white/5 bg-[#0d0d0d]/50 backdrop-blur-md sticky top-0 z-10">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-2xl lg:text-3xl font-bold text-white tracking-tight">{project.name}</h2>
+          <div className="flex items-center gap-4">
+            <h2 className="text-2xl lg:text-3xl font-bold text-white tracking-tight">{project.name}</h2>
+            <IntegrityBadge status={project.integrityStatus} />
+          </div>
           <span className={cn(
             "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border",
             project.status === 'Active' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :

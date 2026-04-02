@@ -5,6 +5,7 @@ import { Project } from '../types';
 import { useToast } from './Toast';
 import { collection, addDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
+import { AuditService, AuditAction } from '../services/audit';
 
 interface ProjectSpecificationsProps {
   project: Project;
@@ -30,18 +31,8 @@ export default function ProjectSpecifications({ project, onUpdate, onBack }: Pro
   ];
 
   // Audit Log Helper
-  const logChange = useCallback(async (action: string, details: any) => {
-    try {
-      await addDoc(collection(db, 'projects', project.id, 'audit_logs'), {
-        action,
-        details,
-        userId: auth.currentUser?.uid,
-        userEmail: auth.currentUser?.email,
-        timestamp: new Date().toISOString()
-      });
-    } catch (err) {
-      console.error('Failed to log audit:', err);
-    }
+  const logChange = useCallback(async (action: AuditAction | string, details: any) => {
+    await AuditService.log(action, details, project.id);
   }, [project.id]);
 
   // Autosave Logic
@@ -61,7 +52,7 @@ export default function ProjectSpecifications({ project, onUpdate, onBack }: Pro
         try {
           await onUpdate(updates);
           setLastSaved(new Date());
-          logChange('SPEC_UPDATE', { type: changedField });
+          logChange(AuditAction.PROJECT_UPDATED, { type: 'SPEC_UPDATE', field: changedField });
         } catch (err) {
           showToast('Failed to save specification', 'error');
         } finally {

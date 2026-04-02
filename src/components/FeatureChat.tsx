@@ -46,7 +46,7 @@ export default function FeatureChat({ project, feature, onBack }: FeatureChatPro
       const context = await AgentOrchestrator.runTask(AgentTaskType.RESOLVE_CONTEXT, { project, features });
       
       // 2. Generate Feature Suggestions
-      const aiSuggestions = await AgentOrchestrator.runTask(AgentTaskType.SUGGEST_FEATURES, { context, userInput: input });
+      const aiSuggestions = await AgentOrchestrator.runTask(AgentTaskType.SUGGEST_FEATURES, { context, userInput: input, projectId: project.id });
       
       setSuggestions(aiSuggestions);
       

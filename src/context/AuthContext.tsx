@@ -32,16 +32,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Use onSnapshot for real-time profile updates
         const unsubscribeProfile = onSnapshot(profileRef, async (docSnap) => {
           if (docSnap.exists()) {
-            setProfile(docSnap.data() as UserProfile);
+            const data = docSnap.data() as UserProfile;
+            const isAdmin = firebaseUser.email === 'lacometta33@gmail.com';
+            
+            if (isAdmin && data.role !== 'Admin') {
+              await updateDoc(profileRef, { 
+                role: 'Admin',
+                onboarded: true,
+                storytellingCompleted: true
+              });
+            }
+            setProfile(data);
           } else {
             // Create initial profile
+            const isAdmin = firebaseUser.email === 'lacometta33@gmail.com';
             const newProfile: UserProfile = {
               uid: firebaseUser.uid,
               email: firebaseUser.email || '',
               displayName: firebaseUser.displayName || 'Anonymous',
               photoURL: firebaseUser.photoURL || undefined,
-              role: 'Builder', // Default role
-              onboarded: false,
+              role: isAdmin ? 'Admin' : 'Builder', // Default role
+              onboarded: isAdmin, // Admins don't need onboarding
+              storytellingCompleted: isAdmin, // Admins don't need storytelling
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
               lastLogin: new Date().toISOString(),

@@ -86,6 +86,13 @@ export default function Backlog({ project, onSelectFeature }: BacklogProps) {
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
           <button 
+            onClick={() => navigate(`/projects/${project.id}/ideation`)}
+            className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all border border-white/10"
+          >
+            <FolderKanban size={18} className="text-indigo-400" />
+            AI Ideation
+          </button>
+          <button 
             onClick={handleAddFeature}
             disabled={isAdding}
             className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-lg shadow-indigo-500/20 active:scale-95 disabled:opacity-50"

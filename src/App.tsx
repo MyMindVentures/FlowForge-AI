@@ -19,10 +19,13 @@ import AssetManager from './components/AssetManager';
 import ProjectSettings from './components/ProjectSettings';
 import ProjectSpecifications from './components/ProjectSpecifications';
 import AIAgents from './components/AIAgents';
+import UIArchitecture from './components/UIArchitecture';
 import FeatureChat from './components/FeatureChat';
 import Splash from './components/Splash';
 import Auth from './components/Auth';
+import Storytelling from './components/Storytelling';
 import ErrorBoundary from './components/ErrorBoundary';
+import DatabaseTruthSync from './components/DatabaseTruthSync';
 import { ToastProvider } from './components/Toast';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
@@ -40,12 +43,27 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function StorytellingGuard({ children }: { children: React.ReactNode }) {
+  const { profile } = useAuth();
+  const location = useLocation();
+
+  if (!profile) return <LoadingScreen />;
+  if (!profile.storytellingCompleted && location.pathname !== '/storytelling') {
+    return <Navigate to="/storytelling" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 function OnboardingGuard({ children }: { children: React.ReactNode }) {
   const { profile } = useAuth();
   const location = useLocation();
 
   if (!profile) return <LoadingScreen />;
-  if (!profile.onboarded && location.pathname !== '/onboarding') {
+  if (!profile.storytellingCompleted && location.pathname !== '/storytelling') {
+    return <Navigate to="/storytelling" replace />;
+  }
+  if (profile.storytellingCompleted && !profile.onboarded && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />;
   }
   if (profile.onboarded && !profile.role && location.pathname !== '/role-selection') {
@@ -200,6 +218,46 @@ function RoadmapWrapper() {
   );
 }
 
+function UIArchitectureWrapper() {
+  const { 
+    selectedProject, 
+    pages, 
+    components, 
+    layouts, 
+    styleSystem,
+    features,
+    addPage,
+    updatePage,
+    addComponent,
+    updateComponent,
+    updateStyleSystem,
+    addLayout,
+    updateLayout
+  } = useProject();
+  const navigate = useNavigate();
+
+  if (!selectedProject) return <Navigate to="/projects" replace />;
+
+  return (
+    <UIArchitecture 
+      project={selectedProject}
+      pages={pages}
+      components={components}
+      layouts={layouts}
+      styleSystem={styleSystem}
+      features={features}
+      onBack={() => navigate(`/projects/${selectedProject.id}/workspace`)}
+      onAddPage={addPage}
+      onUpdatePage={updatePage}
+      onAddComponent={addComponent}
+      onUpdateComponent={updateComponent}
+      onUpdateStyleSystem={updateStyleSystem}
+      onAddLayout={addLayout}
+      onUpdateLayout={updateLayout}
+    />
+  );
+}
+
 function LoadingScreen() {
   return (
     <div className="h-full bg-[#0a0a0a] flex items-center justify-center min-h-[400px]">
@@ -231,16 +289,21 @@ function AppRoutes() {
     return <Auth onLogin={login} />;
   }
 
+  const isAdmin = profile?.role === 'Admin' || profile?.email === 'lacometta33@gmail.com';
+
   return (
     <ErrorBoundary>
       <AnimatePresence mode="wait">
         <Routes>
+          {/* Storytelling Flow */}
+          <Route path="/storytelling" element={<Storytelling onComplete={() => { updateProfile({ storytellingCompleted: true }); navigate('/onboarding'); }} />} />
+
           {/* Onboarding Flow */}
-          <Route path="/onboarding" element={<Onboarding onComplete={() => { updateProfile({ onboarded: true }); navigate('/role-selection'); }} />} />
-          <Route path="/role-selection" element={<RoleSelection onSelect={(role) => { setRole(role); navigate('/projects'); }} />} />
+          <Route path="/onboarding" element={<StorytellingGuard><Onboarding onComplete={() => { updateProfile({ onboarded: true }); navigate('/role-selection'); }} /></StorytellingGuard>} />
+          <Route path="/role-selection" element={<StorytellingGuard><RoleSelection onSelect={(role) => { setRole(role); navigate('/projects'); }} /></StorytellingGuard>} />
 
           {/* Global Layout Wrapper */}
-          <Route element={<OnboardingGuard><Layout projectName={selectedProject?.name} onLogout={logout} isAdmin={profile?.role === 'Admin'} syncStatus={syncStatus}><Outlet /></Layout></OnboardingGuard>}>
+          <Route element={<OnboardingGuard><Layout projectName={selectedProject?.name} onLogout={logout} isAdmin={isAdmin} syncStatus={syncStatus}><Outlet /></Layout></OnboardingGuard>}>
             
             {/* Dashboard */}
             <Route path="/projects" element={<Dashboard onSelectProject={(p) => { setSelectedProject(p); navigate(`/projects/${p.id}/workspace`); }} />} />
@@ -259,6 +322,7 @@ function AppRoutes() {
               <Route path="settings" element={<ProjectSettings project={selectedProject!} onUpdate={updateProject} onBack={() => navigate(`/projects/${selectedProject!.id}/workspace`)} />} />
               <Route path="specifications" element={<ProjectSpecifications project={selectedProject!} onUpdate={updateProject} onBack={() => navigate(`/projects/${selectedProject!.id}/workspace`)} />} />
               <Route path="agents" element={<AIAgents project={selectedProject!} onBack={() => navigate(`/projects/${selectedProject!.id}/workspace`)} />} />
+              <Route path="ui-architecture" element={<UIArchitectureWrapper />} />
             </Route>
 
             {/* Global Modules */}
@@ -325,6 +389,7 @@ export default function App() {
       <ToastProvider>
         <AuthProvider>
           <ProjectProvider>
+            <DatabaseTruthSync />
             <AppRoutes />
           </ProjectProvider>
         </AuthProvider>

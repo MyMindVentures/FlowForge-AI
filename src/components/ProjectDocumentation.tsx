@@ -44,7 +44,7 @@ export default function ProjectDocumentation({ project, features, onBack }: Proj
       const context = await AgentOrchestrator.runTask(AgentTaskType.RESOLVE_CONTEXT, { project, features });
       
       // 2. Generate PRD
-      const result = await AgentOrchestrator.runTask(AgentTaskType.GENERATE_PRD, { context, features: completedFeatures });
+      const result = await AgentOrchestrator.runTask(AgentTaskType.GENERATE_PRD, { context, features: completedFeatures, projectId: project.id });
       
       setDocs(result);
       showToast('Project documentation generated successfully!', 'success');

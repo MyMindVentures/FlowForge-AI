@@ -13,10 +13,11 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isAuthenticated() && 
-             (request.auth.token.email == 'lacometta33@gmail.com' ||
-              (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin'));
+      return isAuthenticated() && (
+        (request.auth.token.email == 'lacometta33@gmail.com' && request.auth.token.email_verified == true) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Admin', 'admin'])
+      );
     }
 
     function isProjectOwner(projectId) {
@@ -68,10 +69,12 @@ service cloud.firestore {
       allow update: if isOwner(resource.data.userId) || isAdmin();
     }
 
-    // Admin Settings
-    match /admin/settings/{settingId} {
-      allow read: if isAdmin();
-      allow write: if isAdmin();
+    // Admin Section
+    match /admin/{adminDoc} {
+      allow read, write: if isAdmin();
+      match /{subCollection=**} {
+        allow read, write: if isAdmin();
+      }
     }
 
     // Sync States
@@ -87,10 +90,16 @@ service cloud.firestore {
       allow read: if isProjectMember(projectId);
       allow create: if isAuthenticated();
       allow update: if isProjectOwner(projectId);
-      allow delete: if isProjectOwner(projectId);
+      allow delete: if isProjectOwner(projectId) && resource.data.name != 'FlowForge AI';
 
       // Project Settings
       match /settings/config {
+        allow read: if isProjectMember(projectId);
+        allow write: if isProjectOwner(projectId);
+      }
+
+      // AI Function Overrides
+      match /ai_functions/{functionId} {
         allow read: if isProjectMember(projectId);
         allow write: if isProjectOwner(projectId);
       }
@@ -164,6 +173,56 @@ service cloud.firestore {
       match /audit_logs/{logId} {
         allow read: if isProjectMember(projectId);
         allow create: if isProjectMember(projectId);
+      }
+
+      // AI Logs (Project-specific)
+      match /ai_logs/{logId} {
+        allow read: if isProjectMember(projectId);
+        allow create: if isProjectMember(projectId);
+        allow update: if isProjectMember(projectId);
+      }
+
+      // AI Generations (Project-specific)
+      match /generations/{genId} {
+        allow read: if isProjectMember(projectId);
+        allow write: if isProjectMember(projectId);
+      }
+
+      // UI Architecture
+      match /ui_pages/{pageId} {
+        allow read, write: if isProjectMember(projectId);
+      }
+      match /ui_page_visuals/{visualId} {
+        allow read, write: if isProjectMember(projectId);
+      }
+      match /ui_page_docs/{docId} {
+        allow read, write: if isProjectMember(projectId);
+      }
+      match /ui_components/{componentId} {
+        allow read, write: if isProjectMember(projectId);
+      }
+      match /ui_layouts/{layoutId} {
+        allow read, write: if isProjectMember(projectId);
+      }
+      match /ui_style/{configId} {
+        allow read, write: if isProjectMember(projectId);
+      }
+
+      // Structured Project Data
+      match /prd_sections/{sectionId} {
+        allow read, write: if isProjectMember(projectId);
+      }
+      match /audit_findings/{findingId} {
+        allow read, write: if isProjectMember(projectId);
+      }
+      match /readiness_checks/{checkId} {
+        allow read, write: if isProjectMember(projectId);
+      }
+      match /blockers/{blockerId} {
+        allow read, write: if isProjectMember(projectId);
+      }
+      match /tasks/{taskId} {
+        allow read, write: if isProjectMember(projectId);
       }
     }
   }

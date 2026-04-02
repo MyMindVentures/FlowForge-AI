@@ -1,3 +1,22 @@
+export type SyncStatus = 'planned' | 'implemented' | 'failing' | 'blocked' | 'out_of_sync';
+
+export type IntegrityStatus = 'verified' | 'incomplete' | 'out_of_sync' | 'needs_confirmation' | 'failing' | 'planned';
+
+export type Task = {
+  id: string;
+  projectId: string;
+  title: string;
+  description: string;
+  status: SyncStatus;
+  priority: 'Low' | 'Medium' | 'High' | 'Critical';
+  relatedEntityId?: string;
+  relatedEntityType?: 'feature' | 'page' | 'component' | 'layout' | 'function';
+  developerNotes?: string;
+  failureNotes?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type UserRole = 'Architect' | 'Builder' | 'Admin';
 
 export type UserProfile = {
@@ -7,6 +26,7 @@ export type UserProfile = {
   photoURL?: string;
   role: UserRole;
   onboarded: boolean;
+  storytellingCompleted: boolean;
   createdAt: string;
   updatedAt: string;
   lastLogin: string;
@@ -123,6 +143,7 @@ export type Project = {
   uxStrategy?: string;
   members: ProjectMember[];
   repositories: GitHubRepo[];
+  integrityStatus?: IntegrityStatus;
 };
 
 export type Session = {
@@ -155,6 +176,24 @@ export type Suggestion = {
   timestamp: string;
 };
 
+export type UIImpactAnalysis = {
+  affectedPages: string[];
+  affectedLayouts: string[];
+  affectedComponents: string[];
+  mobilePattern: string;
+  recommendation: string;
+  newPagesNeeded?: {
+    name: string;
+    purpose: string;
+    layoutType: string;
+  }[];
+  newComponentsNeeded?: {
+    name: string;
+    type: string;
+    purpose: string;
+  }[];
+};
+
 export type Feature = {
   id: string;
   projectId: string;
@@ -167,9 +206,121 @@ export type Feature = {
   why: string;
   nonTechnicalDescription: string;
   technicalDescription: string;
+  conceptThinker?: string;
+  builderBrief?: string;
+  codingPrompt?: string;
+  uiDesignPrompt?: string;
   createdAt: string;
   updatedAt: string;
   archived: boolean;
+  score?: number;
+  relatedPages?: string[];
+  relatedComponents?: string[];
+  impactAnalysis?: string;
+  uiImpact?: UIImpactAnalysis;
+  isLocked?: boolean;
+  visualUrl?: string;
+  visualPrompt?: string;
+  integrityStatus?: IntegrityStatus;
+};
+
+export type UILayoutType = 'auth' | 'dashboard' | 'detail' | 'chat' | 'modal' | 'empty';
+
+export type UILayout = {
+  id: string;
+  projectId: string;
+  name: string;
+  type: UILayoutType;
+  description: string;
+  config: any;
+  createdAt: string;
+  updatedAt: string;
+  integrityStatus?: IntegrityStatus;
+};
+
+export type UIComponent = {
+  id: string;
+  projectId: string;
+  name: string;
+  type: 'card' | 'tab' | 'chip' | 'list' | 'modal' | 'section' | 'input' | 'button' | 'other';
+  description: string;
+  purpose: string;
+  props: Record<string, any>;
+  usageGuidelines: string;
+  linkedFeatureIds: string[];
+  createdAt: string;
+  updatedAt: string;
+  integrityStatus?: IntegrityStatus;
+};
+
+export type UIPageVisual = {
+  id: string;
+  projectId: string;
+  pageId: string;
+  url: string;
+  prompt: string;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type UIPageDocumentation = {
+  id: string;
+  projectId: string;
+  pageId: string;
+  content: string;
+  sections: {
+    title: string;
+    body: string;
+  }[];
+  updatedAt: string;
+};
+
+export type UIPage = {
+  id: string;
+  projectId: string;
+  name: string;
+  path: string;
+  purpose: string;
+  layoutId: string;
+  linkedFeatureIds: string[];
+  componentIds: string[];
+  mobilePattern: string;
+  visualUrl?: string;
+  visualPrompt?: string;
+  documentation?: string;
+  createdAt: string;
+  updatedAt: string;
+  integrityStatus?: IntegrityStatus;
+};
+
+export type UIStyleSystem = {
+  id: string;
+  projectId: string;
+  colors: {
+    primary: string;
+    secondary: string;
+    accent: string;
+    background: string;
+    surface: string;
+    error: string;
+    success: string;
+    warning: string;
+    info: string;
+  };
+  typography: {
+    fontSans: string;
+    fontMono: string;
+    baseSize: string;
+    scale: number;
+  };
+  spacing: {
+    unit: number;
+    scale: number[];
+  };
+  darkMode: boolean;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type Comment = {
@@ -201,6 +352,7 @@ export type LLMFunction = {
   isEnabled: boolean;
   createdAt: string;
   updatedAt: string;
+  integrityStatus?: IntegrityStatus;
 };
 
 export type VersionStatus = 'Planned' | 'In Progress' | 'Released';
@@ -215,6 +367,70 @@ export type Version = {
   goal: string;
   linkedFeatureIds: string[];
   releaseNotes?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AuditLogEntry = {
+  id: string;
+  action: string;
+  details: any;
+  userId: string;
+  userEmail: string;
+  projectId?: string;
+  featureId?: string;
+  timestamp: any; // Firestore Timestamp or ISO string
+};
+
+export type PRDSection = {
+  id: string;
+  projectId: string;
+  title: string;
+  content: string;
+  order: number;
+  linkedFeatureIds: string[];
+  status: 'Draft' | 'Finalized' | 'Review';
+  createdAt: string;
+  updatedAt: string;
+  integrityStatus?: IntegrityStatus;
+};
+
+export type AuditFinding = {
+  id: string;
+  projectId: string;
+  title: string;
+  description: string;
+  severity: 'Low' | 'Medium' | 'High' | 'Critical';
+  category: 'Security' | 'Performance' | 'UI/UX' | 'Logic' | 'Sync';
+  status: 'Open' | 'Fixed' | 'Ignored';
+  linkedFeatureId?: string;
+  linkedPageId?: string;
+  createdAt: string;
+  updatedAt: string;
+  integrityStatus?: IntegrityStatus;
+};
+
+export type ReadinessCheck = {
+  id: string;
+  projectId: string;
+  category: 'Security' | 'Performance' | 'UI/UX' | 'Logic' | 'Infrastructure';
+  label: string;
+  description: string;
+  isPassed: boolean;
+  notes?: string;
+  updatedAt: string;
+  integrityStatus?: IntegrityStatus;
+};
+
+export type Blocker = {
+  id: string;
+  projectId: string;
+  title: string;
+  description: string;
+  severity: 'Low' | 'Medium' | 'High' | 'Critical';
+  status: 'Active' | 'Resolved';
+  linkedTaskId?: string;
+  linkedFeatureId?: string;
   createdAt: string;
   updatedAt: string;
 };

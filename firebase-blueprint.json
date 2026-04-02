@@ -40,7 +40,8 @@
         "status": { "type": "string", "enum": ["Active", "Archived", "Draft"] },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" },
-        "deletedAt": { "type": "string", "format": "date-time" }
+        "deletedAt": { "type": "string", "format": "date-time" },
+        "integrityStatus": { "type": "string", "enum": ["verified", "incomplete", "out_of_sync", "needs_confirmation", "failing", "planned"] }
       },
       "required": ["name", "ownerId", "status", "createdAt", "updatedAt"]
     },
@@ -111,9 +112,12 @@
         "why": { "type": "string" },
         "nonTechnicalDescription": { "type": "string" },
         "technicalDescription": { "type": "string" },
+        "visualUrl": { "type": "string" },
+        "visualPrompt": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" },
-        "deletedAt": { "type": "string", "format": "date-time" }
+        "deletedAt": { "type": "string", "format": "date-time" },
+        "integrityStatus": { "type": "string", "enum": ["verified", "incomplete", "out_of_sync", "needs_confirmation", "failing", "planned"] }
       },
       "required": ["projectId", "featureCode", "title", "status", "priority", "createdAt", "updatedAt"]
     },
@@ -313,6 +317,205 @@
         "status": { "type": "string" }
       },
       "required": ["userId", "deviceId", "lastSyncAt", "status"]
+    },
+    "UILayout": {
+      "title": "UILayout",
+      "description": "Reusable UI layout definition.",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["auth", "dashboard", "detail", "chat", "modal", "empty"] },
+        "description": { "type": "string" },
+        "config": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "integrityStatus": { "type": "string", "enum": ["verified", "incomplete", "out_of_sync", "needs_confirmation", "failing", "planned"] }
+      },
+      "required": ["projectId", "name", "type", "createdAt", "updatedAt"]
+    },
+    "UIComponent": {
+      "title": "UIComponent",
+      "description": "Reusable UI component definition.",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["card", "tab", "chip", "list", "modal", "section", "input", "button", "other"] },
+        "description": { "type": "string" },
+        "purpose": { "type": "string" },
+        "props": { "type": "object" },
+        "usageGuidelines": { "type": "string" },
+        "linkedFeatureIds": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "integrityStatus": { "type": "string", "enum": ["verified", "incomplete", "out_of_sync", "needs_confirmation", "failing", "planned"] }
+      },
+      "required": ["projectId", "name", "type", "createdAt", "updatedAt"]
+    },
+    "UIPage": {
+      "title": "UIPage",
+      "description": "App page definition.",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string" },
+        "name": { "type": "string" },
+        "path": { "type": "string" },
+        "purpose": { "type": "string" },
+        "layoutId": { "type": "string" },
+        "linkedFeatureIds": { "type": "array", "items": { "type": "string" } },
+        "componentIds": { "type": "array", "items": { "type": "string" } },
+        "mobilePattern": { "type": "string" },
+        "visualUrl": { "type": "string" },
+        "visualPrompt": { "type": "string" },
+        "documentation": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "integrityStatus": { "type": "string", "enum": ["verified", "incomplete", "out_of_sync", "needs_confirmation", "failing", "planned"] }
+      },
+      "required": ["projectId", "name", "path", "layoutId", "createdAt", "updatedAt"]
+    },
+    "UIPageVisual": {
+      "title": "UIPageVisual",
+      "description": "A visual representation of a page.",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string" },
+        "pageId": { "type": "string" },
+        "url": { "type": "string" },
+        "prompt": { "type": "string" },
+        "version": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["projectId", "pageId", "url", "prompt", "version", "createdAt", "updatedAt"]
+    },
+    "UIPageDocumentation": {
+      "title": "UIPageDocumentation",
+      "description": "Detailed documentation for a page.",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string" },
+        "pageId": { "type": "string" },
+        "content": { "type": "string" },
+        "sections": { 
+          "type": "array", 
+          "items": { 
+            "type": "object",
+            "properties": {
+              "title": { "type": "string" },
+              "body": { "type": "string" }
+            }
+          } 
+        },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["projectId", "pageId", "content", "updatedAt"]
+    },
+    "UIStyleSystem": {
+      "title": "UIStyleSystem",
+      "description": "Centralized styling system.",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string" },
+        "colors": { "type": "object" },
+        "typography": { "type": "object" },
+        "spacing": { "type": "object" },
+        "darkMode": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["projectId", "colors", "typography", "spacing", "darkMode", "createdAt", "updatedAt"]
+    },
+    "PRDSection": {
+      "title": "PRDSection",
+      "description": "A structured section of the PRD.",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "order": { "type": "integer" },
+        "linkedFeatureIds": { "type": "array", "items": { "type": "string" } },
+        "status": { "type": "string", "enum": ["Draft", "Finalized", "Review"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "integrityStatus": { "type": "string", "enum": ["verified", "incomplete", "out_of_sync", "needs_confirmation", "failing", "planned"] }
+      },
+      "required": ["projectId", "title", "content", "order", "status", "createdAt", "updatedAt"]
+    },
+    "AuditFinding": {
+      "title": "AuditFinding",
+      "description": "A finding from a technical or product audit.",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "severity": { "type": "string", "enum": ["Low", "Medium", "High", "Critical"] },
+        "category": { "type": "string", "enum": ["Security", "Performance", "UI/UX", "Logic", "Sync"] },
+        "status": { "type": "string", "enum": ["Open", "Fixed", "Ignored"] },
+        "linkedFeatureId": { "type": "string" },
+        "linkedPageId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "integrityStatus": { "type": "string", "enum": ["verified", "incomplete", "out_of_sync", "needs_confirmation", "failing", "planned"] }
+      },
+      "required": ["projectId", "title", "description", "severity", "category", "status", "createdAt", "updatedAt"]
+    },
+    "ReadinessCheck": {
+      "title": "ReadinessCheck",
+      "description": "A check for production readiness.",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string" },
+        "category": { "type": "string", "enum": ["Security", "Performance", "UI/UX", "Logic", "Infrastructure"] },
+        "label": { "type": "string" },
+        "description": { "type": "string" },
+        "isPassed": { "type": "boolean" },
+        "notes": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "integrityStatus": { "type": "string", "enum": ["verified", "incomplete", "out_of_sync", "needs_confirmation", "failing", "planned"] }
+      },
+      "required": ["projectId", "category", "label", "description", "isPassed", "updatedAt"]
+    },
+    "Blocker": {
+      "title": "Blocker",
+      "description": "A critical issue blocking progress.",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "severity": { "type": "string", "enum": ["Low", "Medium", "High", "Critical"] },
+        "status": { "type": "string", "enum": ["Active", "Resolved"] },
+        "linkedTaskId": { "type": "string" },
+        "linkedFeatureId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["projectId", "title", "description", "severity", "status", "createdAt", "updatedAt"]
+    },
+    "TasklistItem": {
+      "title": "TasklistItem",
+      "description": "A task in the project tasklist.",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["planned", "implemented", "failing", "blocked", "out_of_sync"] },
+        "priority": { "type": "string", "enum": ["Low", "Medium", "High", "Critical"] },
+        "linkedFeatureId": { "type": "string" },
+        "linkedPageId": { "type": "string" },
+        "linkedComponentId": { "type": "string" },
+        "assigneeId": { "type": "string" },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "integrityStatus": { "type": "string", "enum": ["verified", "incomplete", "out_of_sync", "needs_confirmation", "failing", "planned"] }
+      },
+      "required": ["projectId", "title", "status", "priority", "createdAt", "updatedAt"]
     }
   },
   "firestore": {
@@ -320,6 +523,7 @@
     "/roles/{roleId}": { "schema": "Role", "description": "RBAC roles" },
     "/projects/{projectId}": { "schema": "Project", "description": "Project documents" },
     "/projects/{projectId}/settings/config": { "schema": "ProjectSettings", "description": "Project configuration" },
+    "/projects/{projectId}/ai_functions/{functionId}": { "schema": "LLMFunction", "description": "Project-specific AI function overrides" },
     "/projects/{projectId}/specifications/{specId}": { "schema": "ProjectSpecification", "description": "Project specs" },
     "/projects/{projectId}/modules/{moduleId}": { "schema": "WorkspaceModule", "description": "Workspace modules" },
     "/projects/{projectId}/roadmap/{versionId}": { "schema": "RoadmapVersion", "description": "Roadmap versions (legacy path)" },
@@ -333,12 +537,23 @@
     "/projects/{projectId}/assets/{assetId}": { "schema": "Asset", "description": "Project assets" },
     "/projects/{projectId}/audit_logs/{logId}": { "schema": "AuditLog", "description": "Project audit logs" },
     "/ai/agents/{agentId}": { "schema": "AIAgent", "description": "AI agents" },
-    "/ai/generations/{genId}": { "schema": "AIGeneration", "description": "AI generation history" },
+    "/projects/{projectId}/generations/{genId}": { "schema": "AIGeneration", "description": "AI generation history" },
     "/ai/prompts/{promptId}": { "schema": "LLMPrompt", "description": "LLM prompts" },
     "/ai/runs/{runId}": { "schema": "LLMRun", "description": "LLM execution logs" },
-    "/ai_logs/{logId}": { "schema": "AILog", "description": "AI task execution logs" },
+    "/projects/{projectId}/ai_logs/{logId}": { "schema": "AILog", "description": "AI task execution logs" },
     "/notifications/{notifId}": { "schema": "Notification", "description": "User notifications" },
     "/admin/settings/{settingId}": { "schema": "AdminSettings", "description": "Global settings" },
-    "/sync/states/{stateId}": { "schema": "SyncState", "description": "Client sync states" }
+    "/sync/states/{stateId}": { "schema": "SyncState", "description": "Client sync states" },
+    "/projects/{projectId}/ui_layouts/{layoutId}": { "schema": "UILayout", "description": "UI Layouts" },
+    "/projects/{projectId}/ui_components/{componentId}": { "schema": "UIComponent", "description": "UI Components" },
+    "/projects/{projectId}/ui_pages/{pageId}": { "schema": "UIPage", "description": "App Pages" },
+    "/projects/{projectId}/ui_page_visuals/{visualId}": { "schema": "UIPageVisual", "description": "Page Visuals" },
+    "/projects/{projectId}/ui_page_docs/{docId}": { "schema": "UIPageDocumentation", "description": "Page Documentation" },
+    "/projects/{projectId}/ui_style/{configId}": { "schema": "UIStyleSystem", "description": "UI Style System" },
+    "/projects/{projectId}/prd_sections/{sectionId}": { "schema": "PRDSection", "description": "Structured PRD sections" },
+    "/projects/{projectId}/audit_findings/{findingId}": { "schema": "AuditFinding", "description": "Audit findings" },
+    "/projects/{projectId}/readiness_checks/{checkId}": { "schema": "ReadinessCheck", "description": "Production readiness checks" },
+    "/projects/{projectId}/blockers/{blockerId}": { "schema": "Blocker", "description": "Project blockers" },
+    "/projects/{projectId}/tasks/{taskId}": { "schema": "TasklistItem", "description": "Project tasklist" }
   }
 }

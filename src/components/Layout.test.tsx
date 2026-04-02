@@ -39,8 +39,21 @@ describe('Layout', () => {
       removeVersion: vi.fn(),
       loading: false,
       projectsLoading: false,
-      setSelectedProject: vi.fn()
-    });
+      setSelectedProject: vi.fn(),
+      pages: [],
+      components: [],
+      layouts: [],
+      styleSystem: null,
+      addPage: vi.fn(),
+      updatePage: vi.fn(),
+      addComponent: vi.fn(),
+      updateComponent: vi.fn(),
+      updateStyleSystem: vi.fn(),
+      addLayout: vi.fn(),
+      updateLayout: vi.fn(),
+      addFeature: vi.fn(),
+      updateFeature: vi.fn()
+    } as any);
 
     render(
       <MemoryRouter>
@@ -81,8 +94,21 @@ describe('Layout', () => {
       removeVersion: vi.fn(),
       loading: false,
       projectsLoading: false,
-      setSelectedProject: vi.fn()
-    });
+      setSelectedProject: vi.fn(),
+      pages: [],
+      components: [],
+      layouts: [],
+      styleSystem: null,
+      addPage: vi.fn(),
+      updatePage: vi.fn(),
+      addComponent: vi.fn(),
+      updateComponent: vi.fn(),
+      updateStyleSystem: vi.fn(),
+      addLayout: vi.fn(),
+      updateLayout: vi.fn(),
+      addFeature: vi.fn(),
+      updateFeature: vi.fn()
+    } as any);
 
     render(
       <MemoryRouter>

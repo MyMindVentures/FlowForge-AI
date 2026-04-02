@@ -145,6 +145,12 @@ export default function Dashboard({ onSelectProject }: DashboardProps) {
 
   const handleDeleteProject = async () => {
     if (!deleteModal.projectId) return;
+    const projectToDelete = projects.find(p => p.id === deleteModal.projectId);
+    if (projectToDelete?.name === 'FlowForge AI') {
+      showToast('The FlowForge AI project cannot be deleted.', 'error');
+      setDeleteModal({ isOpen: false, projectId: null });
+      return;
+    }
     try {
       await remove(deleteModal.projectId);
       showToast('Project deleted');
@@ -489,17 +495,19 @@ function ProjectCard({ project, onSelect, onToggleFavorite, onArchive, onDuplica
                         <Archive size={14} />
                         Archive
                       </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDelete(project.id);
-                          setShowOptions(false);
-                        }}
-                        className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-medium text-red-400 hover:bg-red-400/10 transition-colors"
-                      >
-                        <Trash2 size={14} />
-                        Delete
-                      </button>
+                      {project.name !== 'FlowForge AI' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(project.id);
+                            setShowOptions(false);
+                          }}
+                          className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-medium text-red-400 hover:bg-red-400/10 transition-colors"
+                        >
+                          <Trash2 size={14} />
+                          Delete
+                        </button>
+                      )}
                     </motion.div>
                   </>
                 )}

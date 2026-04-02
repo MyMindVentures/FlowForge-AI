@@ -6,6 +6,7 @@ import { useToast } from './Toast';
 import { cn } from '../lib/utils';
 import { collection, addDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
+import { AuditService, AuditAction } from '../services/audit';
 
 interface ProjectSettingsProps {
   project: Project;
@@ -29,18 +30,8 @@ export default function ProjectSettings({ project, onUpdate, onBack }: ProjectSe
   const { showToast } = useToast();
 
   // Audit Log Helper
-  const logChange = useCallback(async (action: string, details: any) => {
-    try {
-      await addDoc(collection(db, 'projects', project.id, 'audit_logs'), {
-        action,
-        details,
-        userId: auth.currentUser?.uid,
-        userEmail: auth.currentUser?.email,
-        timestamp: new Date().toISOString()
-      });
-    } catch (err) {
-      console.error('Failed to log audit:', err);
-    }
+  const logChange = useCallback(async (action: AuditAction | string, details: any) => {
+    await AuditService.log(action, details, project.id);
   }, [project.id]);
 
   // Autosave Logic
@@ -61,7 +52,7 @@ export default function ProjectSettings({ project, onUpdate, onBack }: ProjectSe
           
           // Log important changes
           if (formData.status !== project.status) {
-            logChange('STATUS_CHANGE', { from: project.status, to: formData.status });
+            logChange(AuditAction.PROJECT_UPDATED, { field: 'status', from: project.status, to: formData.status });
           }
         } catch (err) {
           showToast('Failed to autosave changes', 'error');
@@ -90,7 +81,7 @@ export default function ProjectSettings({ project, onUpdate, onBack }: ProjectSe
       members: [...prev.members, newMember]
     }));
     setNewMemberEmail('');
-    logChange('MEMBER_ADDED', { email: newMemberEmail });
+    logChange(AuditAction.MEMBER_ADDED, { email: newMemberEmail });
   };
 
   const handleRemoveMember = (uid: string) => {
@@ -99,7 +90,7 @@ export default function ProjectSettings({ project, onUpdate, onBack }: ProjectSe
       ...prev,
       members: prev.members.filter(m => m.uid !== uid)
     }));
-    logChange('MEMBER_REMOVED', { email: member?.email });
+    logChange(AuditAction.MEMBER_REMOVED, { email: member?.email });
   };
 
   const handleAddRepo = (e: React.FormEvent) => {
@@ -120,7 +111,7 @@ export default function ProjectSettings({ project, onUpdate, onBack }: ProjectSe
       repositories: [...prev.repositories, newRepo]
     }));
     setNewRepoUrl('');
-    logChange('REPO_ADDED', { url: newRepoUrl });
+    logChange(AuditAction.REPO_ADDED, { url: newRepoUrl });
   };
 
   return (
