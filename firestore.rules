@@ -85,164 +85,87 @@ service cloud.firestore {
     // ===============================================================
     // Project-Scoped Collections
     // ===============================================================
+    function isValidProject(data) {
+      return data.keys().hasAll(['name', 'ownerId']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.ownerId is string && data.ownerId.size() < 128 &&
+             (!('description' in data) || (data.description is string && data.description.size() < 1000));
+    }
+
+    function isValidFeature(data) {
+      return data.keys().hasAll(['title', 'status']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.status in ['Planned', 'In Progress', 'Completed', 'Archived'] &&
+             (!('problem' in data) || (data.problem is string && data.problem.size() < 2000)) &&
+             (!('nonTechnicalDescription' in data) || (data.nonTechnicalDescription is string && data.nonTechnicalDescription.size() < 2000));
+    }
+
+    function isValidPage(data) {
+      return data.keys().hasAll(['name', 'path']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.path is string && data.path.size() < 200;
+    }
+
+    function isValidComponent(data) {
+      return data.keys().hasAll(['name', 'type']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.type is string && data.type.size() < 50;
+    }
+
+    function isValidLLMFunction(data) {
+      return data.keys().hasAll(['name', 'modelId']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.modelId is string && data.modelId.size() < 100;
+    }
 
     match /projects/{projectId} {
-      allow get: if isProjectMember(projectId);
+      allow get: if isAuthenticated() && (isAdmin() || isProjectMember(projectId));
       allow list: if isAuthenticated() && (
         isAdmin() || 
         resource.data.ownerId == request.auth.uid || 
         request.auth.uid in resource.data.members
       );
-      allow create: if isAuthenticated();
-      allow update: if isProjectOwner(projectId);
-      allow delete: if isProjectOwner(projectId) && resource.data.name != 'FlowForge AI';
+      allow create: if isAuthenticated() && isValidProject(request.resource.data);
+      allow update: if isAuthenticated() && (isAdmin() || isProjectOwner(projectId)) && isValidProject(request.resource.data);
+      allow delete: if isAdmin() || (isProjectOwner(projectId) && resource.data.name != 'FlowForge AI');
 
       // Project Settings
       match /settings/config {
-        allow read: if isProjectMember(projectId);
-        allow write: if isProjectOwner(projectId);
+        allow read: if isAdmin() || isProjectMember(projectId);
+        allow write: if isAdmin() || isProjectOwner(projectId);
       }
 
       // AI Function Overrides
       match /ai_functions/{functionId} {
-        allow read: if isProjectMember(projectId);
-        allow write: if isProjectOwner(projectId);
-      }
-
-      // Ideation Sessions
-      match /sessions/{sessionId} {
-        allow read, write: if isProjectMember(projectId);
-      }
-
-      // Ideation Chats
-      match /chats/{chatId} {
-        allow read, write: if isProjectMember(projectId);
-      }
-
-      // AI Suggestions
-      match /suggestions/{suggestionId} {
-        allow read, write: if isProjectMember(projectId);
-      }
-
-      // Specifications
-      match /specifications/{specId} {
-        allow read: if isProjectMember(projectId);
-        allow write: if isProjectOwner(projectId);
-      }
-
-      // Modules
-      match /modules/{moduleId} {
-        allow read: if isProjectMember(projectId);
-        allow write: if isProjectOwner(projectId);
-      }
-
-      // Roadmap / Versions
-      match /roadmap/{versionId} {
-        allow read: if isProjectMember(projectId);
-        allow write: if isProjectOwner(projectId);
-      }
-
-      match /versions/{versionId} {
-        allow read: if isProjectMember(projectId);
-        allow write: if isProjectOwner(projectId);
-      }
-
-      // Features
-      match /features/{featureId} {
-        allow read: if isProjectMember(projectId);
-        allow write: if isProjectMember(projectId);
-
-        // Comments
-        match /comments/{commentId} {
-          allow read: if isProjectMember(projectId);
-          allow create: if isProjectMember(projectId);
-          allow update, delete: if isOwner(resource.data.userId);
-        }
-
-        // Activity
-        match /activity/{logId} {
-          allow read: if isProjectMember(projectId);
-          allow create: if isProjectMember(projectId);
-        }
-      }
-
-      // Documents
-      match /documents/{docId} {
-        allow read: if isProjectMember(projectId);
-        allow write: if isProjectMember(projectId);
-
-        match /versions/{versionId} {
-          allow read: if isProjectMember(projectId);
-          allow create: if isProjectMember(projectId);
-        }
-      }
-
-      // Showcase
-      match /showcase/{contentId} {
-        allow read: if resource.data.isPublic == true || isProjectMember(projectId);
-        allow write: if isProjectOwner(projectId);
-      }
-
-      // Assets
-      match /assets/{assetId} {
-        allow read: if isProjectMember(projectId);
-        allow write: if isProjectMember(projectId);
-      }
-
-      // Audit Logs
-      match /audit_logs/{logId} {
-        allow read: if isProjectMember(projectId);
-        allow create: if isProjectMember(projectId);
-      }
-
-      // AI Logs (Project-specific)
-      match /ai_logs/{logId} {
-        allow read: if isProjectMember(projectId);
-        allow create: if isProjectMember(projectId);
-        allow update: if isProjectMember(projectId);
-      }
-
-      // AI Generations (Project-specific)
-      match /generations/{genId} {
-        allow read: if isProjectMember(projectId);
-        allow write: if isProjectMember(projectId);
+        allow read: if isAdmin() || isProjectMember(projectId);
+        allow write: if isAdmin() || isProjectOwner(projectId);
       }
 
       // UI Architecture
       match /ui_pages/{pageId} {
-        allow read, write: if isProjectMember(projectId);
+        allow read: if isAdmin() || isProjectMember(projectId);
+        allow create: if (isAdmin() || isProjectMember(projectId)) && isValidPage(request.resource.data);
+        allow update: if (isAdmin() || isProjectMember(projectId)) && isValidPage(request.resource.data);
+        allow delete: if isAdmin() || isProjectMember(projectId);
       }
-      match /ui_page_visuals/{visualId} {
-        allow read, write: if isProjectMember(projectId);
-      }
-      match /ui_page_docs/{docId} {
-        allow read, write: if isProjectMember(projectId);
-      }
+      
       match /ui_components/{componentId} {
-        allow read, write: if isProjectMember(projectId);
-      }
-      match /ui_layouts/{layoutId} {
-        allow read, write: if isProjectMember(projectId);
-      }
-      match /ui_style/{configId} {
-        allow read, write: if isProjectMember(projectId);
+        allow read: if isAdmin() || isProjectMember(projectId);
+        allow create: if (isAdmin() || isProjectMember(projectId)) && isValidComponent(request.resource.data);
+        allow update: if (isAdmin() || isProjectMember(projectId)) && isValidComponent(request.resource.data);
+        allow delete: if isAdmin() || isProjectMember(projectId);
       }
 
-      // Structured Project Data
-      match /prd_sections/{sectionId} {
-        allow read, write: if isProjectMember(projectId);
+      match /features/{featureId} {
+        allow read: if isAdmin() || isProjectMember(projectId);
+        allow create: if (isAdmin() || isProjectMember(projectId)) && isValidFeature(request.resource.data);
+        allow update: if (isAdmin() || isProjectMember(projectId)) && isValidFeature(request.resource.data);
+        allow delete: if isAdmin() || isProjectMember(projectId);
       }
-      match /audit_findings/{findingId} {
-        allow read, write: if isProjectMember(projectId);
-      }
-      match /readiness_checks/{checkId} {
-        allow read, write: if isProjectMember(projectId);
-      }
-      match /blockers/{blockerId} {
-        allow read, write: if isProjectMember(projectId);
-      }
-      match /tasks/{taskId} {
-        allow read, write: if isProjectMember(projectId);
+
+      // Catch-all for other subcollections
+      match /{allSubcollections=**} {
+        allow read, write: if isAdmin() || isProjectMember(projectId);
       }
     }
   }

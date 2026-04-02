@@ -84,14 +84,14 @@ describe('AgentOrchestrator', () => {
 
   it('should handle SUGGEST_FEATURES task', async () => {
     (AIFunctions.generateFeatureSuggestions as any).mockResolvedValue('features');
-    await AgentOrchestrator.runTask(AgentTaskType.SUGGEST_FEATURES, { context: 'ctx', userInput: 'input' });
-    expect(AIFunctions.generateFeatureSuggestions).toHaveBeenCalledWith('ctx', 'input');
+    await AgentOrchestrator.runTask(AgentTaskType.SUGGEST_FEATURES, { context: 'ctx', userInput: 'input', projectId: 'p1' });
+    expect(AIFunctions.generateFeatureSuggestions).toHaveBeenCalledWith('ctx', 'input', 'p1');
   });
 
   it('should handle GENERATE_PRD task', async () => {
     (AIFunctions.generatePRD as any).mockResolvedValue('prd');
-    await AgentOrchestrator.runTask(AgentTaskType.GENERATE_PRD, { context: 'ctx', features: [] });
-    expect(AIFunctions.generatePRD).toHaveBeenCalledWith('ctx', []);
+    await AgentOrchestrator.runTask(AgentTaskType.GENERATE_PRD, { context: 'ctx', features: [], projectId: 'p1' });
+    expect(AIFunctions.generatePRD).toHaveBeenCalledWith('ctx', [], 'p1');
   });
 
   it('should handle GENERATE_LOGO task', async () => {

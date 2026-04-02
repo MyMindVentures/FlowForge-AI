@@ -60,11 +60,15 @@ export default function Admin() {
     updateFeature,
     addComponent,
     updateComponent,
+    addLayout,
     updateLayout,
     addPRDSection,
     addAuditFinding,
+    updateAuditFinding,
     addReadinessCheck,
+    updateReadinessCheck,
     addTask,
+    updateTask,
     updateLLMFunction
   } = useProject();
 
@@ -254,6 +258,38 @@ export default function Admin() {
       await updateModel(modelId, { isEnabled: !currentStatus });
     } catch (error) {
       console.error('Error toggling model:', error);
+    }
+  };
+
+  const handleReadinessTest = async () => {
+    if (!selectedProject) return;
+    setIsSyncing(true);
+    try {
+      const { score, results, findings } = await SyncService.performProductionReadinessTest(selectedProject.id);
+      
+      // Update database with results
+      for (const check of results) {
+        const existing = readinessChecks.find(c => c.label === check.label);
+        if (existing) {
+          await updateReadinessCheck(existing.id, { isPassed: check.isPassed, updatedAt: new Date().toISOString() });
+        } else {
+          await addReadinessCheck(check);
+        }
+      }
+
+      for (const finding of findings) {
+        const existing = auditFindings.find(f => f.title === finding.title);
+        if (!existing) {
+          await addAuditFinding(finding);
+        }
+      }
+
+      alert(`Production Readiness Test Completed! Score: ${score}%`);
+    } catch (error) {
+      console.error('Readiness test failed:', error);
+      alert('Failed to perform readiness test.');
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -624,6 +660,14 @@ export default function Admin() {
         <div className="flex items-center gap-2">
           {selectedProject && (
             <>
+              <button
+                onClick={handleReadinessTest}
+                disabled={isSyncing}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 text-sm font-bold transition-all disabled:opacity-50"
+              >
+                <CheckCircle2 size={16} className={cn(isSyncing && "animate-spin")} />
+                Run Readiness Test
+              </button>
               <button
                 onClick={handleReverseSync}
                 disabled={isSyncing}

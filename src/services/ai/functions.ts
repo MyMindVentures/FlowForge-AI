@@ -562,4 +562,30 @@ export class AIFunctions {
     const response = await model;
     return response.text || '';
   }
+
+  static async runFunction(name: string, args: any, projectId?: string): Promise<any> {
+    const config = await this.getFunctionConfig(name, projectId);
+    const ai = new GoogleGenAI({ apiKey: getApiKey() });
+    
+    // Convert args to a string if it's an object
+    const contents = typeof args === 'string' ? args : JSON.stringify(args, null, 2);
+
+    const model = ai.models.generateContent({
+      model: config.model,
+      contents: contents,
+      config: {
+        systemInstruction: config.systemInstruction,
+        // We don't know the schema here, so we just return text or try to parse JSON if it looks like it
+      }
+    });
+
+    const response = await model;
+    const text = response.text || '';
+    
+    if (text.trim().startsWith('{') || text.trim().startsWith('[')) {
+      return safeJsonParse(text, text);
+    }
+    
+    return text;
+  }
 }

@@ -38,7 +38,7 @@ describe('ProjectDocumentation', () => {
         <ProjectDocumentation project={mockProject} features={[]} onBack={() => {}} />
       </ToastProvider>
     );
-    expect(screen.getByText('Project Specs')).toBeInTheDocument();
+    expect(screen.getByText('Generate Specs')).toBeInTheDocument();
   });
 
   it('calls onBack when back button is clicked', () => {

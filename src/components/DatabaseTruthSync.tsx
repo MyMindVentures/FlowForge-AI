@@ -44,14 +44,25 @@ export default function DatabaseTruthSync() {
 
       try {
         // 0. Consolidate duplicates if any
-        const duplicates = projects.filter(p => p.name === 'FlowForge AI' && p.id !== selectedProject.id);
+        // We only consolidate if we are currently on a "FlowForge AI" project
+        // and there are OTHER projects with the same name.
+        const duplicates = projects.filter(p => 
+          p.name === 'FlowForge AI' && 
+          p.id !== selectedProject.id && 
+          p.status !== 'Archived'
+        );
+        
         if (duplicates.length > 0) {
           console.log(`Sync: Consolidating ${duplicates.length} duplicates...`);
           for (const duplicate of duplicates) {
-            await updateProjectById(duplicate.id, { 
-              name: `FlowForge AI (Duplicate - ${duplicate.id.substring(0, 4)})`, 
-              status: 'Archived' 
-            } as any);
+            // Only rename if it's not already renamed/archived
+            if (duplicate.name === 'FlowForge AI') {
+              await updateProjectById(duplicate.id, { 
+                name: `FlowForge AI (Duplicate - ${duplicate.id.substring(0, 4)})`, 
+                status: 'Archived',
+                updatedAt: new Date().toISOString()
+              } as any);
+            }
           }
         }
 
@@ -105,7 +116,17 @@ export default function DatabaseTruthSync() {
           }
         }
 
+        // Add missing functions
+        for (const codebaseFn of codebaseData.functions) {
+          const exists = functions.some(f => f.name === codebaseFn.name);
+          if (!exists) {
+            console.log(`Sync: Adding missing function ${codebaseFn.name}`);
+            await addLLMFunction(codebaseFn as any);
+          }
+        }
+
         console.log('Database Truth Sync completed successfully.');
+        syncPerformed.current = true;
       } catch (error) {
         console.error('Database Truth Sync failed:', error);
       }

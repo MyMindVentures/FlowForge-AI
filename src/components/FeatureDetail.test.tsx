@@ -4,6 +4,14 @@ import FeatureDetail from './FeatureDetail';
 import { ToastProvider } from './Toast';
 
 // Mock the hooks
+vi.mock('../context/ProjectContext', () => ({
+  useProject: () => ({
+    updateFeature: vi.fn(),
+    addAuditFinding: vi.fn(),
+    updateAuditFinding: vi.fn()
+  })
+}));
+
 vi.mock('../hooks/useFirestore', () => ({
   useFirestore: () => ({
     data: [],

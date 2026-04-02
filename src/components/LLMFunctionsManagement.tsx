@@ -21,6 +21,7 @@ import { LLMFunction, AIModelConfig, PromptTemplate } from '../types';
 import { useFirestore } from '../hooks/useFirestore';
 import { cn } from '../lib/utils';
 import { useToast } from './Toast';
+import { AIFunctions } from '../services/ai/functions';
 
 interface LLMFunctionsManagementProps {
   onBack?: () => void;
@@ -32,8 +33,12 @@ export default function LLMFunctionsManagement({ onBack }: LLMFunctionsManagemen
   const { data: prompts } = useFirestore<PromptTemplate>('admin/ai/prompts');
   
   const [editingFunction, setEditingFunction] = useState<LLMFunction | null>(null);
+  const [testingFunction, setTestingFunction] = useState<LLMFunction | null>(null);
+  const [testInput, setTestInput] = useState('');
+  const [testResult, setTestResult] = useState<any>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
   const { showToast } = useToast();
 
   const handleToggle = async (fn: LLMFunction) => {
@@ -75,6 +80,23 @@ export default function LLMFunctionsManagement({ onBack }: LLMFunctionsManagemen
       showToast('Failed to save function', 'error');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleTest = async () => {
+    if (!testingFunction) return;
+    setIsTesting(true);
+    setTestResult(null);
+    try {
+      const result = await AIFunctions.runFunction(testingFunction.name, testInput);
+      setTestResult(result);
+      showToast('Test completed successfully');
+    } catch (err) {
+      console.error('Test failed:', err);
+      showToast('Test failed', 'error');
+      setTestResult({ error: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setIsTesting(false);
     }
   };
 
@@ -208,6 +230,17 @@ export default function LLMFunctionsManagement({ onBack }: LLMFunctionsManagemen
                   )} />
                 </button>
                 <button 
+                  onClick={() => {
+                    setTestingFunction(fn);
+                    setTestInput('');
+                    setTestResult(null);
+                  }}
+                  className="p-2 text-gray-400 hover:text-amber-400 hover:bg-amber-400/10 rounded-xl transition-all"
+                  title="Test Function"
+                >
+                  <RefreshCw size={20} className={cn(isTesting && testingFunction?.id === fn.id && "animate-spin")} />
+                </button>
+                <button 
                   onClick={() => setEditingFunction(fn)}
                   className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all"
                 >
@@ -224,6 +257,90 @@ export default function LLMFunctionsManagement({ onBack }: LLMFunctionsManagemen
           ))}
         </div>
       )}
+
+      {/* Test Modal */}
+      <AnimatePresence>
+        {testingFunction && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                if (!isTesting) {
+                  setTestingFunction(null);
+                  setTestResult(null);
+                }
+              }}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-2xl bg-[#141414] border border-white/10 rounded-[32px] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+            >
+              <div className="p-6 border-b border-white/10 flex items-center justify-between bg-[#1a1a1a]">
+                <div>
+                  <h3 className="text-xl font-bold text-white">Test Function: {testingFunction.name}</h3>
+                  <p className="text-xs text-gray-500 mt-1">Execute the function with custom input</p>
+                </div>
+                <button 
+                  onClick={() => {
+                    setTestingFunction(null);
+                    setTestResult(null);
+                  }} 
+                  className="p-2 text-gray-400 hover:text-white transition-colors"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Test Input (Text or JSON)</label>
+                  <textarea
+                    value={testInput}
+                    onChange={(e) => setTestInput(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 h-32 font-mono text-xs resize-none"
+                    placeholder="Enter input for the function..."
+                  />
+                </div>
+
+                {testResult && (
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Result</label>
+                    <div className="p-4 rounded-2xl bg-black/40 border border-white/5 font-mono text-xs text-gray-300 overflow-x-auto max-h-64 overflow-y-auto">
+                      <pre>{typeof testResult === 'object' ? JSON.stringify(testResult, null, 2) : testResult}</pre>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-6 border-t border-white/10 bg-[#1a1a1a] flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTestingFunction(null);
+                    setTestResult(null);
+                  }}
+                  className="px-6 py-3 rounded-xl text-sm font-bold text-gray-400 hover:text-white transition-all"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={handleTest}
+                  disabled={isTesting || !testInput.trim()}
+                  className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white px-8 py-3 rounded-xl text-sm font-bold transition-all shadow-lg shadow-amber-500/20 disabled:opacity-50"
+                >
+                  {isTesting ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
+                  <span>{isTesting ? 'Executing...' : 'Run Test'}</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Edit/Create Modal */}
       <AnimatePresence>

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { Project, Feature, Version, UIPage, UIComponent, UILayout, UIStyleSystem, PRDSection, AuditFinding, ReadinessCheck, Blocker, Task, LLMFunction } from '../types';
 import { useFirestore } from '../hooks/useFirestore';
 import { useAuth } from './AuthContext';
@@ -66,24 +66,30 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     user ? (isAdmin ? [] : [where('ownerId', '==', user.uid)]) : []
   );
 
+  const creatingSystemProject = useRef(false);
+
   // Ensure FlowForge AI project exists and handle duplicates
   useEffect(() => {
-    if (!projectsLoading && user && isAdmin) {
+    if (!projectsLoading && user && isAdmin && !creatingSystemProject.current) {
       const systemMetadata = SyncService.getSystemProjectMetadata();
       const flowForgeProjects = projects.filter(p => p.name === systemMetadata.name);
       
       if (flowForgeProjects.length === 0) {
         // Create if none exists
+        creatingSystemProject.current = true;
+        console.log('ProjectContext: Creating system project "FlowForge AI"...');
         addProjectDoc({
           ...systemMetadata,
           ownerId: user.uid,
           members: [],
-          repositories: []
-        } as any);
+          repositories: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        } as any).finally(() => {
+          creatingSystemProject.current = false;
+        });
       } else if (flowForgeProjects.length > 1) {
-        // If duplicates exist, we should ideally merge them.
-        // For now, we'll just log it and the UI will naturally pick the first one or the one with the most data if we sort it.
-        console.warn(`Found ${flowForgeProjects.length} duplicate FlowForge AI projects. Consolidation recommended.`);
+        console.warn(`ProjectContext: Found ${flowForgeProjects.length} duplicate FlowForge AI projects. Consolidation will be handled by DatabaseTruthSync.`);
       }
     }
   }, [projectsLoading, projects, user, isAdmin, addProjectDoc]);
@@ -91,11 +97,23 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   // Sort projects to ensure consistent selection of the "primary" one if duplicates exist
   const sortedProjects = [...projects].sort((a, b) => {
     if (a.name === 'FlowForge AI' && b.name === 'FlowForge AI') {
-      // Prefer the one created earlier or with more metadata
+      // Prefer the one created earlier
       return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     }
     return 0;
   });
+
+  // Auto-select FlowForge AI if no project is selected and user is admin
+  useEffect(() => {
+    if (!selectedProjectId && isAdmin && projects.length > 0) {
+      const systemProject = sortedProjects.find(p => p.name === 'FlowForge AI');
+      if (systemProject) {
+        console.log('ProjectContext: Auto-selecting system project:', systemProject.id);
+        setSelectedProjectId(systemProject.id);
+        localStorage.setItem('selected_project_id', systemProject.id);
+      }
+    }
+  }, [selectedProjectId, isAdmin, projects, sortedProjects]);
 
   const selectedProject = sortedProjects.find(p => p.id === selectedProjectId) || null;
 
