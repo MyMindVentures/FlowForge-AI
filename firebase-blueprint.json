@@ -146,6 +146,48 @@
       },
       "required": ["userId", "action", "changes", "createdAt"]
     },
+    "Session": {
+      "title": "Session",
+      "description": "An ideation session within a project.",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string" },
+        "name": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["projectId", "name", "createdAt"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "A message in an ideation chat.",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string" },
+        "sessionId": { "type": "string" },
+        "userId": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "assistant"] },
+        "content": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["projectId", "sessionId", "userId", "role", "content", "timestamp"]
+    },
+    "Suggestion": {
+      "title": "Suggestion",
+      "description": "An AI-generated feature suggestion.",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string" },
+        "sessionId": { "type": "string" },
+        "title": { "type": "string" },
+        "problem": { "type": "string" },
+        "solution": { "type": "string" },
+        "userValue": { "type": "string" },
+        "scope": { "type": "string", "enum": ["Small", "Medium", "Large"] },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["projectId", "sessionId", "title", "problem", "solution", "userValue", "scope", "status", "timestamp"]
+    },
     "AuditLog": {
       "title": "AuditLog",
       "description": "General project audit log.",
@@ -531,6 +573,9 @@
     "/projects/{projectId}/features/{featureId}": { "schema": "Feature", "description": "Features" },
     "/projects/{projectId}/features/{featureId}/comments/{commentId}": { "schema": "FeatureComment", "description": "Feature comments" },
     "/projects/{projectId}/features/{featureId}/activity/{logId}": { "schema": "FeatureActivityLog", "description": "Feature activity logs" },
+    "/projects/{projectId}/sessions/{sessionId}": { "schema": "Session", "description": "Ideation sessions" },
+    "/projects/{projectId}/chats/{chatId}": { "schema": "ChatMessage", "description": "Ideation chat messages" },
+    "/projects/{projectId}/suggestions/{suggestionId}": { "schema": "Suggestion", "description": "AI feature suggestions" },
     "/projects/{projectId}/documents/{docId}": { "schema": "Document", "description": "Project documents" },
     "/projects/{projectId}/documents/{docId}/versions/{versionId}": { "schema": "DocumentVersion", "description": "Document versions" },
     "/projects/{projectId}/showcase/{contentId}": { "schema": "ShowcaseContent", "description": "Showcase content" },

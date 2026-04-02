@@ -159,9 +159,22 @@ export default function Admin() {
         prdSections: newPrdSections,
         auditFindings: newAuditFindings,
         readinessChecks: newReadinessChecks,
-        tasks: newTasks
+        tasks: newTasks,
+        layouts: newLayouts
       } = SyncService.generateProjectFromCodebase(selectedProject.id);
       
+      // Add missing layouts
+      for (const layout of newLayouts) {
+        if (!layouts.find(l => l.name === layout.name)) {
+          await addLayout(layout);
+        } else {
+          const existing = layouts.find(l => l.name === layout.name);
+          if (existing) {
+            await updateLayout(existing.id, { integrityStatus: layout.integrityStatus });
+          }
+        }
+      }
+
       // Add missing pages
       for (const page of newPages) {
         if (!pages.find(p => p.name === page.name)) {

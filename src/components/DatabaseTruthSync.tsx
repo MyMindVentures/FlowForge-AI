@@ -12,11 +12,14 @@ import { useAuth } from '../context/AuthContext';
  */
 export default function DatabaseTruthSync() {
   const { 
+    projects,
     selectedProject, 
     pages, 
     components, 
     features,
     functions,
+    updateProject,
+    updateProjectById,
     updatePage, 
     updateComponent, 
     updateFeature,
@@ -40,6 +43,18 @@ export default function DatabaseTruthSync() {
       syncPerformed.current = true;
 
       try {
+        // 0. Consolidate duplicates if any
+        const duplicates = projects.filter(p => p.name === 'FlowForge AI' && p.id !== selectedProject.id);
+        if (duplicates.length > 0) {
+          console.log(`Sync: Consolidating ${duplicates.length} duplicates...`);
+          for (const duplicate of duplicates) {
+            await updateProjectById(duplicate.id, { 
+              name: `FlowForge AI (Duplicate - ${duplicate.id.substring(0, 4)})`, 
+              status: 'Archived' 
+            } as any);
+          }
+        }
+
         // 1. Analyze current state
         const { 
           updatedPages, 

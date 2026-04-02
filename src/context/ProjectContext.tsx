@@ -11,6 +11,7 @@ interface ProjectContextType {
   selectedProject: Project | null;
   setSelectedProject: (project: Project | null) => void;
   updateProject: (updates: Partial<Project>) => Promise<void>;
+  updateProjectById: (id: string, updates: Partial<Project>) => Promise<void>;
   addVersion: (version: Partial<Version>) => Promise<string>;
   updateVersion: (id: string, updates: Partial<Version>) => Promise<void>;
   removeVersion: (id: string) => Promise<void>;
@@ -65,27 +66,46 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     user ? (isAdmin ? [] : [where('ownerId', '==', user.uid)]) : []
   );
 
-  // Ensure FlowForge AI project exists
+  // Ensure FlowForge AI project exists and handle duplicates
   useEffect(() => {
     if (!projectsLoading && user && isAdmin) {
       const systemMetadata = SyncService.getSystemProjectMetadata();
-      const flowForgeExists = projects.some(p => p.name === systemMetadata.name);
-      if (!flowForgeExists) {
+      const flowForgeProjects = projects.filter(p => p.name === systemMetadata.name);
+      
+      if (flowForgeProjects.length === 0) {
+        // Create if none exists
         addProjectDoc({
           ...systemMetadata,
           ownerId: user.uid,
           members: [],
           repositories: []
         } as any);
+      } else if (flowForgeProjects.length > 1) {
+        // If duplicates exist, we should ideally merge them.
+        // For now, we'll just log it and the UI will naturally pick the first one or the one with the most data if we sort it.
+        console.warn(`Found ${flowForgeProjects.length} duplicate FlowForge AI projects. Consolidation recommended.`);
       }
     }
   }, [projectsLoading, projects, user, isAdmin, addProjectDoc]);
 
-  const selectedProject = projects.find(p => p.id === selectedProjectId) || null;
+  // Sort projects to ensure consistent selection of the "primary" one if duplicates exist
+  const sortedProjects = [...projects].sort((a, b) => {
+    if (a.name === 'FlowForge AI' && b.name === 'FlowForge AI') {
+      // Prefer the one created earlier or with more metadata
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    }
+    return 0;
+  });
+
+  const selectedProject = sortedProjects.find(p => p.id === selectedProjectId) || null;
 
   const updateProject = async (updates: Partial<Project>) => {
     if (!selectedProjectId) return;
     await updateProjectDoc(selectedProjectId, updates);
+  };
+
+  const updateProjectById = async (id: string, updates: Partial<Project>) => {
+    await updateProjectDoc(id, updates);
   };
 
   const { data: features, loading: featuresLoading, syncStatus: featuresSync, add: addFeatureDoc, update: updateFeatureDoc } = useFirestore<Feature>(
@@ -330,6 +350,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       selectedProject, 
       setSelectedProject, 
       updateProject,
+      updateProjectById,
       addVersion,
       updateVersion,
       removeVersion,
