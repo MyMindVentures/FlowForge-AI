@@ -29,6 +29,7 @@ vi.mock('firebase/firestore', () => {
     onSnapshot: mockOnSnapshot,
     addDoc: vi.fn().mockResolvedValue({ id: 'new-id' }),
     updateDoc: vi.fn().mockResolvedValue({}),
+    setDoc: vi.fn().mockResolvedValue({}),
     deleteDoc: vi.fn().mockResolvedValue({}),
     doc: vi.fn(),
     QueryConstraint: vi.fn()
@@ -110,6 +111,30 @@ describe('useFirestore', () => {
 
     await act(async () => {
       await result.current.update('1', { name: 'Updated Item' });
+    });
+
+    expect(result.current.syncStatus).toBe('error');
+  });
+
+  it('set should call setDoc and update status', async () => {
+    const { setDoc } = await import('firebase/firestore');
+    const { result } = renderHook(() => useFirestore('test-collection'));
+
+    await act(async () => {
+      await result.current.set('1', { name: 'Set Item' });
+    });
+
+    expect(setDoc).toHaveBeenCalled();
+    expect(result.current.syncStatus).toBe('synced');
+  });
+
+  it('set should handle error', async () => {
+    const { setDoc } = await import('firebase/firestore');
+    (setDoc as any).mockRejectedValueOnce(new Error('Set error'));
+    const { result } = renderHook(() => useFirestore('test-collection'));
+
+    await act(async () => {
+      await result.current.set('1', { name: 'Set Item' });
     });
 
     expect(result.current.syncStatus).toBe('error');

@@ -33,7 +33,28 @@ vi.mock('../../../src/services/ai/functions', () => ({
     generateFeatureSuggestions: vi.fn(),
     generatePRD: vi.fn(),
     generateLogoConcepts: vi.fn(),
-    generateMarketingKit: vi.fn()
+    generateMarketingKit: vi.fn(),
+    translateConcept: vi.fn(),
+    translateTechnical: vi.fn(),
+    generateCodingPrompt: vi.fn(),
+    generateDesignPrompt: vi.fn(),
+    generateTitle: vi.fn(),
+    synthesizeProblem: vi.fn(),
+    analyzeDifferentiation: vi.fn(),
+    scoreFeature: vi.fn(),
+    planSequence: vi.fn(),
+    mapPages: vi.fn(),
+    mapComponents: vi.fn(),
+    assistArchitect: vi.fn(),
+    assistBuilder: vi.fn(),
+    recommendStatus: vi.fn(),
+    analyzeImpact: vi.fn(),
+    analyzeUIImpact: vi.fn(),
+    generateUIArchitecture: vi.fn(),
+    generateVisualPrompt: vi.fn(),
+    generateFeatureVisual: vi.fn(),
+    generatePageVisualPrompt: vi.fn(),
+    generatePageDocumentation: vi.fn()
   }
 }));
 
@@ -104,6 +125,132 @@ describe('AgentOrchestrator', () => {
     (AIFunctions.generateMarketingKit as any).mockResolvedValue('marketing');
     await AgentOrchestrator.runTask(AgentTaskType.GENERATE_MARKETING_KIT, { project: 'proj', features: [] });
     expect(AIFunctions.generateMarketingKit).toHaveBeenCalledWith('proj', []);
+  });
+
+  it('should handle TRANSLATE_CONCEPT task', async () => {
+    (AIFunctions.translateConcept as any).mockResolvedValue('translated');
+    await AgentOrchestrator.runTask(AgentTaskType.TRANSLATE_CONCEPT, { feature: 'f1' });
+    expect(AIFunctions.translateConcept).toHaveBeenCalledWith('f1');
+  });
+
+  it('should handle TRANSLATE_TECHNICAL task', async () => {
+    (AIFunctions.translateTechnical as any).mockResolvedValue('translated');
+    await AgentOrchestrator.runTask(AgentTaskType.TRANSLATE_TECHNICAL, { feature: 'f1' });
+    expect(AIFunctions.translateTechnical).toHaveBeenCalledWith('f1');
+  });
+
+  it('should handle GENERATE_CODING_PROMPT task', async () => {
+    (AIFunctions.generateCodingPrompt as any).mockResolvedValue('prompt');
+    await AgentOrchestrator.runTask(AgentTaskType.GENERATE_CODING_PROMPT, { feature: 'f1', project: 'p1' });
+    expect(AIFunctions.generateCodingPrompt).toHaveBeenCalledWith('f1', 'p1');
+  });
+
+  it('should handle GENERATE_DESIGN_PROMPT task', async () => {
+    (AIFunctions.generateDesignPrompt as any).mockResolvedValue('prompt');
+    await AgentOrchestrator.runTask(AgentTaskType.GENERATE_DESIGN_PROMPT, { feature: 'f1', project: 'p1' });
+    expect(AIFunctions.generateDesignPrompt).toHaveBeenCalledWith('f1', 'p1');
+  });
+
+  it('should handle GENERATE_TITLE task', async () => {
+    (AIFunctions.generateTitle as any).mockResolvedValue('title');
+    await AgentOrchestrator.runTask(AgentTaskType.GENERATE_TITLE, { userInput: 'input' });
+    expect(AIFunctions.generateTitle).toHaveBeenCalledWith('input');
+  });
+
+  it('should handle SYNTHESIZE_PROBLEM task', async () => {
+    (AIFunctions.synthesizeProblem as any).mockResolvedValue('problem');
+    await AgentOrchestrator.runTask(AgentTaskType.SYNTHESIZE_PROBLEM, { userInput: 'input' });
+    expect(AIFunctions.synthesizeProblem).toHaveBeenCalledWith('input');
+  });
+
+  it('should handle ANALYZE_DIFFERENTIATION task', async () => {
+    (AIFunctions.analyzeDifferentiation as any).mockResolvedValue('diff');
+    await AgentOrchestrator.runTask(AgentTaskType.ANALYZE_DIFFERENTIATION, { feature: 'f1', project: 'p1' });
+    expect(AIFunctions.analyzeDifferentiation).toHaveBeenCalledWith('f1', 'p1');
+  });
+
+  it('should handle SCORE_FEATURE task', async () => {
+    (AIFunctions.scoreFeature as any).mockResolvedValue(80);
+    await AgentOrchestrator.runTask(AgentTaskType.SCORE_FEATURE, { feature: 'f1', project: 'p1' });
+    expect(AIFunctions.scoreFeature).toHaveBeenCalledWith('f1', 'p1');
+  });
+
+  it('should handle PLAN_SEQUENCE task', async () => {
+    (AIFunctions.planSequence as any).mockResolvedValue('sequence');
+    await AgentOrchestrator.runTask(AgentTaskType.PLAN_SEQUENCE, { features: [] });
+    expect(AIFunctions.planSequence).toHaveBeenCalledWith([]);
+  });
+
+  it('should handle MAP_PAGES task', async () => {
+    (AIFunctions.mapPages as any).mockResolvedValue(['page1']);
+    await AgentOrchestrator.runTask(AgentTaskType.MAP_PAGES, { feature: 'f1', project: 'p1' });
+    expect(AIFunctions.mapPages).toHaveBeenCalledWith('f1', 'p1');
+  });
+
+  it('should handle MAP_COMPONENTS task', async () => {
+    (AIFunctions.mapComponents as any).mockResolvedValue(['comp1']);
+    await AgentOrchestrator.runTask(AgentTaskType.MAP_COMPONENTS, { feature: 'f1', project: 'p1' });
+    expect(AIFunctions.mapComponents).toHaveBeenCalledWith('f1', 'p1');
+  });
+
+  it('should handle ASSIST_ARCHITECT task', async () => {
+    (AIFunctions.assistArchitect as any).mockResolvedValue('assist');
+    await AgentOrchestrator.runTask(AgentTaskType.ASSIST_ARCHITECT, { context: 'ctx', userInput: 'input', projectId: 'p1' });
+    expect(AIFunctions.assistArchitect).toHaveBeenCalledWith('ctx', 'input', 'p1');
+  });
+
+  it('should handle ASSIST_BUILDER task', async () => {
+    (AIFunctions.assistBuilder as any).mockResolvedValue('assist');
+    await AgentOrchestrator.runTask(AgentTaskType.ASSIST_BUILDER, { context: 'ctx', userInput: 'input', projectId: 'p1' });
+    expect(AIFunctions.assistBuilder).toHaveBeenCalledWith('ctx', 'input', 'p1');
+  });
+
+  it('should handle RECOMMEND_STATUS task', async () => {
+    (AIFunctions.recommendStatus as any).mockResolvedValue('status');
+    await AgentOrchestrator.runTask(AgentTaskType.RECOMMEND_STATUS, { feature: 'f1' });
+    expect(AIFunctions.recommendStatus).toHaveBeenCalledWith('f1');
+  });
+
+  it('should handle ANALYZE_IMPACT task', async () => {
+    (AIFunctions.analyzeImpact as any).mockResolvedValue('impact');
+    await AgentOrchestrator.runTask(AgentTaskType.ANALYZE_IMPACT, { feature: 'f1', project: 'p1' });
+    expect(AIFunctions.analyzeImpact).toHaveBeenCalledWith('f1', 'p1');
+  });
+
+  it('should handle ANALYZE_UI_IMPACT task', async () => {
+    (AIFunctions.analyzeUIImpact as any).mockResolvedValue('ui-impact');
+    await AgentOrchestrator.runTask(AgentTaskType.ANALYZE_UI_IMPACT, { feature: 'f1', project: 'p1', currentArchitecture: 'arch' });
+    expect(AIFunctions.analyzeUIImpact).toHaveBeenCalledWith('f1', 'p1', 'arch');
+  });
+
+  it('should handle GENERATE_UI_ARCHITECTURE task', async () => {
+    (AIFunctions.generateUIArchitecture as any).mockResolvedValue('ui-arch');
+    await AgentOrchestrator.runTask(AgentTaskType.GENERATE_UI_ARCHITECTURE, { project: 'p1', features: [] });
+    expect(AIFunctions.generateUIArchitecture).toHaveBeenCalledWith('p1', []);
+  });
+
+  it('should handle GENERATE_VISUAL_PROMPT task', async () => {
+    (AIFunctions.generateVisualPrompt as any).mockResolvedValue('prompt');
+    await AgentOrchestrator.runTask(AgentTaskType.GENERATE_VISUAL_PROMPT, { feature: 'f1', project: 'p1' });
+    expect(AIFunctions.generateVisualPrompt).toHaveBeenCalledWith('f1', 'p1');
+  });
+
+  it('should handle GENERATE_FEATURE_VISUAL task', async () => {
+    (AIFunctions.generateFeatureVisual as any).mockResolvedValue('visual');
+    await AgentOrchestrator.runTask(AgentTaskType.GENERATE_FEATURE_VISUAL, { prompt: 'prompt' });
+    expect(AIFunctions.generateFeatureVisual).toHaveBeenCalledWith('prompt');
+  });
+
+  it('should handle GENERATE_PAGE_VISUAL_PROMPT task', async () => {
+    (AIFunctions.generatePageVisualPrompt as any).mockResolvedValue('prompt');
+    await AgentOrchestrator.runTask(AgentTaskType.GENERATE_PAGE_VISUAL_PROMPT, { page: 'p1', project: 'proj', layout: 'l1', components: [], features: [], styleSystem: 'style' });
+    expect(AIFunctions.generatePageVisualPrompt).toHaveBeenCalledWith('p1', 'proj', 'l1', [], [], 'style');
+  });
+
+  it('should handle GENERATE_PAGE_DOCUMENTATION task', async () => {
+    (AIFunctions.generatePageDocumentation as any).mockResolvedValue('doc');
+    await AgentOrchestrator.runTask(AgentTaskType.GENERATE_PAGE_DOCUMENTATION, { page: 'p1', project: 'proj', layout: 'l1', components: [], features: [], styleSystem: 'style' });
+    expect(AIFunctions.generatePageDocumentation).toHaveBeenCalledWith('p1', 'proj', 'l1', [], [], 'style');
   });
 
   it('should throw error for unknown task type', async () => {

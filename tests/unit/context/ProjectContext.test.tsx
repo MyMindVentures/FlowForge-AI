@@ -151,6 +151,30 @@ describe('ProjectContext', () => {
     expect(mockRemove).toHaveBeenCalledWith('ver-1');
   });
 
+  it('addReadinessCheck should upsert if ID is provided', async () => {
+    localStorage.setItem('selected_project_id', 'proj-1');
+    (useAuth as any).mockReturnValue({ user: { uid: 'user-1' } });
+    
+    const mockSet = vi.fn();
+    (useFirestore as any).mockImplementation((path: string) => {
+      if (path === 'projects') {
+        return { data: [{ id: 'proj-1' }], loading: false };
+      }
+      if (path?.includes('readiness_checks')) {
+        return { data: [], loading: false, add: vi.fn(), set: mockSet };
+      }
+      return { data: [], loading: false };
+    });
+
+    const { result } = renderHook(() => useProject(), { wrapper });
+
+    await act(async () => {
+      await result.current.addReadinessCheck({ id: 'rbac', label: 'RBAC' } as any);
+    });
+
+    expect(mockSet).toHaveBeenCalledWith('rbac', { id: 'rbac', label: 'RBAC' });
+  });
+
   it('version operations should throw if no selected project', async () => {
     (useAuth as any).mockReturnValue({ user: { uid: 'user-1' } });
     (useFirestore as any).mockReturnValue({ data: [], loading: false });

@@ -2,6 +2,26 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { AIFunctions, LLMModelRouter } from '../../../src/services/ai/functions';
 import { GoogleGenAI } from '@google/genai';
 
+// Mock Firebase
+vi.mock('../../../src/firebase', () => ({
+  db: {},
+  auth: {
+    currentUser: { uid: 'test-user-id' }
+  }
+}));
+
+vi.mock('firebase/firestore', () => ({
+  collection: vi.fn(),
+  doc: vi.fn(),
+  getDoc: vi.fn().mockResolvedValue({
+    exists: () => false,
+    data: () => ({})
+  }),
+  addDoc: vi.fn(),
+  updateDoc: vi.fn(),
+  serverTimestamp: vi.fn()
+}));
+
 // Mock GoogleGenAI
 const { mockGenerateContent } = vi.hoisted(() => ({
   mockGenerateContent: vi.fn()
