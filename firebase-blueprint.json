@@ -142,6 +142,18 @@
       },
       "required": ["userId", "action", "changes", "createdAt"]
     },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "General project audit log.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "action", "details", "timestamp"]
+    },
     "Document": {
       "title": "Document",
       "description": "Project documentation.",
@@ -319,6 +331,7 @@
     "/projects/{projectId}/documents/{docId}/versions/{versionId}": { "schema": "DocumentVersion", "description": "Document versions" },
     "/projects/{projectId}/showcase/{contentId}": { "schema": "ShowcaseContent", "description": "Showcase content" },
     "/projects/{projectId}/assets/{assetId}": { "schema": "Asset", "description": "Project assets" },
+    "/projects/{projectId}/audit_logs/{logId}": { "schema": "AuditLog", "description": "Project audit logs" },
     "/ai/agents/{agentId}": { "schema": "AIAgent", "description": "AI agents" },
     "/ai/generations/{genId}": { "schema": "AIGeneration", "description": "AI generation history" },
     "/ai/prompts/{promptId}": { "schema": "LLMPrompt", "description": "LLM prompts" },

@@ -159,6 +159,12 @@ service cloud.firestore {
         allow read: if isProjectMember(projectId);
         allow write: if isProjectMember(projectId);
       }
+
+      // Audit Logs
+      match /audit_logs/{logId} {
+        allow read: if isProjectMember(projectId);
+        allow create: if isProjectMember(projectId);
+      }
     }
   }
 }
