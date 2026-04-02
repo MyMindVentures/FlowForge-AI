@@ -42,7 +42,7 @@ interface ProjectContextType {
   updatePRDSection: (id: string, updates: Partial<PRDSection>) => Promise<void>;
   addAuditFinding: (finding: Omit<AuditFinding, 'id'>) => Promise<string>;
   updateAuditFinding: (id: string, updates: Partial<AuditFinding>) => Promise<void>;
-  addReadinessCheck: (check: Omit<ReadinessCheck, 'id'>) => Promise<string>;
+  addReadinessCheck: (check: ReadinessCheck | Omit<ReadinessCheck, 'id'>) => Promise<string>;
   updateReadinessCheck: (id: string, updates: Partial<ReadinessCheck>) => Promise<void>;
   addBlocker: (blocker: Omit<Blocker, 'id'>) => Promise<string>;
   updateBlocker: (id: string, updates: Partial<Blocker>) => Promise<void>;
@@ -173,7 +173,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  const { data: readinessChecks, add: addReadinessCheckDoc, update: updateReadinessCheckDoc } = useFirestore<ReadinessCheck>(
+  const { data: readinessChecks, add: addReadinessCheckDoc, update: updateReadinessCheckDoc, set: setReadinessCheckDoc } = useFirestore<ReadinessCheck>(
     (user && selectedProjectId) ? `projects/${selectedProjectId}/readiness_checks` : null, 
     []
   );
@@ -292,9 +292,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     await updateAuditFindingDoc(id, updates);
   };
 
-  const addReadinessCheck = async (check: Omit<ReadinessCheck, 'id'>) => {
+  const addReadinessCheck = async (check: ReadinessCheck | Omit<ReadinessCheck, 'id'>) => {
     if (!selectedProjectId) throw new Error('No project selected');
-    return await addReadinessCheckDoc(check);
+    if ('id' in check && check.id) {
+      await setReadinessCheckDoc(check.id, check as ReadinessCheck);
+      return check.id;
+    }
+    return await addReadinessCheckDoc(check as Omit<ReadinessCheck, 'id'>);
   };
 
   const updateReadinessCheck = async (id: string, updates: Partial<ReadinessCheck>) => {

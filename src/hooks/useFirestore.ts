@@ -93,6 +93,23 @@ export function useFirestore<T extends DocumentData>(
     }
   }, [collectionPath]);
 
+  const set = useCallback(async (id: string, item: T) => {
+    if (!collectionPath) return;
+    setSyncStatus('syncing');
+    try {
+      const { setDoc } = await import('firebase/firestore');
+      const docRef = doc(db, collectionPath, id);
+      await setDoc(docRef, {
+        ...item,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      setSyncStatus('synced');
+    } catch (err) {
+      setSyncStatus('error');
+      handleFirestoreError(err, OperationType.WRITE, `${collectionPath}/${id}`);
+    }
+  }, [collectionPath]);
+
   const remove = useCallback(async (id: string) => {
     if (!collectionPath) return;
     setSyncStatus('syncing');
@@ -106,5 +123,5 @@ export function useFirestore<T extends DocumentData>(
     }
   }, [collectionPath]);
 
-  return { data, loading, error, syncStatus, add, update, remove };
+  return { data, loading, error, syncStatus, add, update, set, remove };
 }

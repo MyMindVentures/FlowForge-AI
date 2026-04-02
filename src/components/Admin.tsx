@@ -269,12 +269,7 @@ export default function Admin() {
       
       // Update database with results
       for (const check of results) {
-        const existing = readinessChecks.find(c => c.label === check.label);
-        if (existing) {
-          await updateReadinessCheck(existing.id, { isPassed: check.isPassed, updatedAt: new Date().toISOString() });
-        } else {
-          await addReadinessCheck(check);
-        }
+        await addReadinessCheck(check);
       }
 
       for (const finding of findings) {
