@@ -30,10 +30,11 @@ import { SyncService } from '../services/SyncService';
 import LLMFunctionsManagement from './LLMFunctionsManagement';
 import FullPRD from './admin/FullPRD';
 import Tasklist from './admin/Tasklist';
+import CodeReliabilityWorkspace from './admin/CodeReliabilityWorkspace';
 import IntegrityBadge from './IntegrityBadge';
 import SyncIndicator from './SyncIndicator';
 
-type AdminTab = 'overview' | 'prd' | 'tasklist' | 'audit' | 'readiness' | 'models' | 'prompts' | 'functions' | 'keys' | 'logs';
+type AdminTab = 'overview' | 'reliability' | 'prd' | 'tasklist' | 'audit' | 'readiness' | 'models' | 'prompts' | 'functions' | 'keys' | 'logs';
 
 export default function Admin() {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
@@ -624,6 +625,7 @@ export default function Admin() {
         <div className="flex flex-wrap gap-2 p-1 bg-white/5 rounded-2xl w-fit">
           {[
             { id: 'overview', label: 'Overview', icon: BarChart3 },
+            { id: 'reliability', label: 'Reliability', icon: Shield },
             { id: 'prd', label: 'Full PRD', icon: FileText },
             { id: 'tasklist', label: 'Tasklist', icon: ListTodo },
             { id: 'audit', label: 'Audit', icon: Shield },
@@ -693,6 +695,24 @@ export default function Admin() {
         transition={{ duration: 0.2 }}
       >
         {activeTab === 'overview' && renderOverview()}
+        {activeTab === 'reliability' && selectedProject && (
+          <CodeReliabilityWorkspace
+            projectId={selectedProject.id}
+            pages={pages}
+            components={components}
+            features={features}
+            tasks={dbTasks.length > 0 ? dbTasks : tasks}
+          />
+        )}
+        {activeTab === 'reliability' && !selectedProject && (
+          <div className="p-20 text-center rounded-3xl bg-[#141414] border border-white/5 border-dashed">
+            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-600">
+              <Shield size={32} />
+            </div>
+            <h3 className="text-white font-bold text-lg mb-2">No Project Selected</h3>
+            <p className="text-gray-500 text-sm max-w-xs mx-auto">Please select a project from the dashboard to open the Code Reliability Workspace.</p>
+          </div>
+        )}
         
         {activeTab === 'prd' && (
           selectedProject ? (
