@@ -434,3 +434,72 @@ export type Blocker = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type DefinitionOfDoneChecklist = {
+  implementationExists: boolean;
+  noCriticalPlaceholder: boolean;
+  commentsAdded: boolean;
+  testsAdded: boolean;
+  testsPassing: boolean;
+  uiVisibleWhereRelevant: boolean;
+  linkedCorrectly: boolean;
+  noBlockingErrors: boolean;
+};
+
+export type CodeReliabilityIssueType =
+  | 'missing_implementation'
+  | 'missing_comments'
+  | 'missing_tests'
+  | 'test_failure'
+  | 'placeholder_detected'
+  | 'linking_issue'
+  | 'blocking_error';
+
+export type CodeReliabilitySeverity = 'Low' | 'Medium' | 'High' | 'Critical';
+export type CodeReliabilityStatus = 'open' | 'in_progress' | 'resolved' | 'ignored';
+
+export type CodeReliabilityObject = {
+  id: string;
+  projectId: string;
+  objectType: 'file' | 'function' | 'component' | 'page';
+  objectName: string;
+  filePath: string;
+  functionName?: string;
+  issueType: CodeReliabilityIssueType;
+  severity: CodeReliabilitySeverity;
+  status: CodeReliabilityStatus;
+  relatedFeature?: string;
+  relatedPage?: string;
+  relatedComponent?: string;
+  implementationState: 'implemented' | 'incomplete' | 'missing';
+  commentsState: 'good' | 'missing' | 'partial';
+  testState: 'passing' | 'failing' | 'missing';
+  placeholderState: 'clean' | 'warning' | 'critical';
+  errorDetails?: string;
+  definitionOfDone: DefinitionOfDoneChecklist;
+  lastCheckedAt: string;
+  updatedAt: string;
+  createdAt: string;
+};
+
+export type CodeReliabilitySnapshot = {
+  id: string;
+  projectId: string;
+  totalFilesChecked: number;
+  totalFunctionsChecked: number;
+  testPassCount: number;
+  testFailCount: number;
+  missingCommentsCount: number;
+  placeholderDetections: number;
+  definitionOfDoneStatus: 'passing' | 'failing';
+  productionReadiness: {
+    blockers: number;
+    unstableModules: number;
+    failingPages: number;
+    outOfSyncRecords: number;
+    releaseRisk: 'Low' | 'Medium' | 'High' | 'Critical';
+  };
+  checkedAt: string;
+  createdAt: string;
+  updatedAt: string;
+};
