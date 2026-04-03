@@ -236,3 +236,5 @@ function ImpactStat({ label, count, items, icon, color }: { label: string, count
     </div>
   );
 }
+
+

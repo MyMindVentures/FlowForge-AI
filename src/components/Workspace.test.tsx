@@ -5,13 +5,13 @@ import Workspace from './Workspace';
 import { ToastProvider } from './Toast';
 
 // Mock the hooks
-vi.mock('../firebase', () => ({
+vi.mock('../lib/supabase/appClient', () => ({
   db: {},
   auth: { currentUser: { uid: '123' } },
   supabase: {}
 }));
 
-vi.mock('../lib/db/firestoreCompat', () => ({
+vi.mock('../lib/db/supabaseData', () => ({
   collection: vi.fn(),
   addDoc: vi.fn().mockResolvedValue({ id: 'new-session-id' }),
   query: vi.fn(),
@@ -56,3 +56,5 @@ describe('Workspace', () => {
     expect(screen.getByText('Feature Ideation')).toBeInTheDocument();
   });
 });
+
+

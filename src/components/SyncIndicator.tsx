@@ -66,3 +66,5 @@ export default function SyncIndicator({ status, lastSynced }: SyncIndicatorProps
     </div>
   );
 }
+
+

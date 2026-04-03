@@ -6,14 +6,24 @@ import { ToastProvider } from './Toast';
 // Mock the hooks
 vi.mock('../context/ProjectContext', () => ({
   useProject: () => ({
+    pages: [],
+    components: [],
+    layouts: [],
     updateFeature: vi.fn(),
     addAuditFinding: vi.fn(),
     updateAuditFinding: vi.fn()
   })
 }));
 
-vi.mock('../hooks/useFirestore', () => ({
-  useFirestore: () => ({
+vi.mock('../context/AuthContext', () => ({
+  useAuth: () => ({
+    user: { uid: 'user-1', displayName: 'Architect User' },
+    profile: { displayName: 'Architect User' }
+  })
+}));
+
+vi.mock('../hooks/useSupabaseCollection', () => ({
+  useSupabaseCollection: () => ({
     data: [],
     loading: false,
     error: null,
@@ -77,3 +87,5 @@ describe('FeatureDetail', () => {
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 });
+
+

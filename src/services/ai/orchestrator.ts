@@ -1,8 +1,8 @@
-import { collection, addDoc, doc, updateDoc } from '../../lib/db/firestoreCompat';
-import { db, auth } from '../../firebase';
+import { collection, addDoc, doc, updateDoc } from '../../lib/db/supabaseData';
+import { db, auth } from '../../lib/supabase/appClient';
 import { AIFunctions } from './functions';
 import { Project, Feature } from '../../types';
-import { handleFirestoreError, OperationType } from '../../lib/firestoreErrorHandler';
+import { handleDataOperationError, DataOperationType } from '../../lib/databaseErrorHandler';
 
 export enum AgentTaskType {
   RESOLVE_CONTEXT = 'RESOLVE_CONTEXT',
@@ -178,7 +178,7 @@ export class AgentOrchestrator {
       
       return projectId ? `${projectId}:${logRef.id}` : `global:${logRef.id}`;
     } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'ai_logs');
+      handleDataOperationError(error, DataOperationType.CREATE, 'ai_logs');
       throw error;
     }
   }
@@ -209,7 +209,9 @@ export class AgentOrchestrator {
     } catch (error) {
       const [pathPart, idPart] = logId.includes(':') ? logId.split(':') : ['global', logId];
       const fullPath = pathPart === 'global' ? `ai_logs/${idPart}` : `projects/${pathPart}/ai_logs/${idPart}`;
-      handleFirestoreError(error, OperationType.UPDATE, fullPath);
+      handleDataOperationError(error, DataOperationType.UPDATE, fullPath);
     }
   }
 }
+
+

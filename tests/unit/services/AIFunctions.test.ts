@@ -3,7 +3,7 @@ import { AIFunctions, LLMModelRouter } from '../../../src/services/ai/functions'
 import { GoogleGenAI } from '@google/genai';
 
 // Mock Firebase
-vi.mock('../../../src/firebase', () => ({
+vi.mock('../../../src/lib/supabase/appClient', () => ({
   db: {},
   auth: {
     currentUser: { uid: 'test-user-id' }
@@ -11,7 +11,7 @@ vi.mock('../../../src/firebase', () => ({
   supabase: {}
 }));
 
-vi.mock('../../../src/lib/db/firestoreCompat', () => ({
+vi.mock('../../../src/lib/db/supabaseData', () => ({
   collection: vi.fn(),
   doc: vi.fn(),
   getDoc: vi.fn().mockResolvedValue({
@@ -209,3 +209,5 @@ describe('AIFunctions', () => {
     });
   });
 });
+
+

@@ -6,8 +6,8 @@ import { AgentOrchestrator, AgentTaskType } from '../services/ai/orchestrator';
 import { FeatureSuggestion } from '../services/ai/types';
 import { useProject } from '../context/ProjectContext';
 import { useToast } from './Toast';
-import { collection, addDoc } from '../lib/db/firestoreCompat';
-import { db } from '../firebase';
+import { collection, addDoc } from '../lib/db/supabaseData';
+import { db } from '../lib/supabase/appClient';
 
 interface FeatureChatProps {
   project: Project;
@@ -232,3 +232,5 @@ export default function FeatureChat({ project, feature, onBack }: FeatureChatPro
     </div>
   );
 }
+
+

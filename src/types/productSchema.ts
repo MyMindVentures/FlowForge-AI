@@ -1,5 +1,6 @@
 export type ProductProjectPlatform = 'web' | 'ios' | 'android' | 'responsive';
 export type ProductProjectStatus = 'draft' | 'active' | 'archived';
+export type ProductProjectVisibility = 'private' | 'internal' | 'shared' | 'public';
 export type FeatureCardPriority = 'low' | 'medium' | 'high' | 'critical';
 export type FeatureCardStatus = 'idea' | 'backlog' | 'planned' | 'in_progress' | 'done';
 export type UserflowStatus = 'draft' | 'active' | 'archived';
@@ -18,14 +19,35 @@ export type ProductProjectRow = TimestampedRow & {
   name: string;
   slug: string;
   description: string;
+  tagline: string;
+  category: string | null;
+  tags: string[];
+  visibility: ProductProjectVisibility;
   platform: ProductProjectPlatform;
   status: ProductProjectStatus;
   version: string;
   owner_auth_id: string;
+  app_icon_url: string | null;
+  hero_image_url: string | null;
+  demo_url: string | null;
+  source_url: string | null;
+  featured_rank: number;
+  last_synced_at: string | null;
+  catalog_metadata: Record<string, unknown>;
 };
 
 export type ProductProjectInsert = Omit<ProductProjectRow, 'id' | 'created_at' | 'updated_at'>;
 export type ProductProjectUpdate = Partial<ProductProjectInsert>;
+
+export type ProductProjectOverviewRow = ProductProjectRow & {
+  feature_count: number;
+  active_feature_count: number;
+  page_count: number;
+  component_count: number;
+  userflow_count: number;
+  member_count: number;
+  last_activity: string;
+};
 
 export type ProductProjectMemberRow = {
   id: string;
@@ -215,62 +237,84 @@ export interface ProductDatabase {
         Row: ProductProjectRow;
         Insert: ProductProjectInsert;
         Update: ProductProjectUpdate;
+        Relationships: [];
       };
       project_members: {
         Row: ProductProjectMemberRow;
         Insert: ProductProjectMemberInsert;
         Update: ProductProjectMemberUpdate;
+        Relationships: [];
       };
       feature_cards: {
         Row: ProductFeatureCardRow;
         Insert: ProductFeatureCardInsert;
         Update: ProductFeatureCardUpdate;
+        Relationships: [];
       };
       userflows: {
         Row: ProductUserflowRow;
         Insert: ProductUserflowInsert;
         Update: ProductUserflowUpdate;
+        Relationships: [];
       };
       pages: {
         Row: ProductPageRow;
         Insert: ProductPageInsert;
         Update: ProductPageUpdate;
+        Relationships: [];
       };
       page_layouts: {
         Row: ProductPageLayoutRow;
         Insert: ProductPageLayoutInsert;
         Update: ProductPageLayoutUpdate;
+        Relationships: [];
       };
       components: {
         Row: ProductComponentRow;
         Insert: ProductComponentInsert;
         Update: ProductComponentUpdate;
+        Relationships: [];
       };
       userflow_pages: {
         Row: ProductUserflowPageRow;
         Insert: ProductUserflowPageInsert;
         Update: ProductUserflowPageUpdate;
+        Relationships: [];
       };
       layout_components: {
         Row: ProductLayoutComponentRow;
         Insert: ProductLayoutComponentInsert;
         Update: ProductLayoutComponentUpdate;
+        Relationships: [];
       };
       feature_card_userflows: {
         Row: ProductFeatureCardUserflowRow;
         Insert: ProductFeatureCardUserflowInsert;
         Update: ProductFeatureCardUserflowUpdate;
+        Relationships: [];
       };
       feature_card_pages: {
         Row: ProductFeatureCardPageRow;
         Insert: ProductFeatureCardPageInsert;
         Update: ProductFeatureCardPageUpdate;
+        Relationships: [];
       };
       feature_card_components: {
         Row: ProductFeatureCardComponentRow;
         Insert: ProductFeatureCardComponentInsert;
         Update: ProductFeatureCardComponentUpdate;
+        Relationships: [];
       };
     };
+    Views: {
+      project_overviews: {
+        Row: ProductProjectOverviewRow;
+        Relationships: [];
+      };
+    };
+    Functions: {};
+    Enums: {};
+    CompositeTypes: {};
   };
 }
+

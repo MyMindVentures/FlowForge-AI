@@ -24,6 +24,20 @@ export type UserProfile = {
   email: string;
   displayName: string;
   photoURL?: string;
+  firstName?: string;
+  lastName?: string;
+  aliasName?: string;
+  secondaryEmail?: string;
+  phone?: string;
+  jobTitle?: string;
+  functionTitle?: string;
+  organizationName?: string;
+  githubUsername?: string;
+  githubProfileUrl?: string;
+  githubPrimaryEmail?: string;
+  githubAvatarUrl?: string;
+  githubUserId?: string;
+  bio?: string;
   role: UserRole;
   onboarded: boolean;
   storytellingCompleted: boolean;
@@ -110,6 +124,20 @@ export type ErrorLog = {
   errorMessage: string;
   stackTrace?: string;
   requestPayload?: any;
+};
+
+export type FeedbackItem = {
+  id: string;
+  userId: string;
+  userEmail: string;
+  projectId?: string;
+  category: 'bug' | 'feature' | 'ux' | 'other';
+  status: 'new' | 'reviewed' | 'planned' | 'resolved';
+  subject: string;
+  message: string;
+  contextPath?: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type ProjectMember = {
@@ -224,6 +252,20 @@ export type Feature = {
   relatedPages?: string[];
   relatedComponents?: string[];
   impactAnalysis?: string;
+  category?: string;
+  epic?: string;
+  release?: string;
+  persona?: string;
+  jobsToBeDone?: string;
+  acceptanceCriteria?: string;
+  successMetrics?: string;
+  nonFunctionalRequirements?: string;
+  dependencies?: string;
+  assumptions?: string;
+  risks?: string;
+  notes?: string;
+  figmaLink?: string;
+  specLink?: string;
   uiImpact?: UIImpactAnalysis;
   isLocked?: boolean;
   visualUrl?: string;
@@ -334,9 +376,14 @@ export type Comment = {
   id: string;
   featureId: string;
   authorRole: 'Architect' | 'Builder';
+  authorName?: string;
+  summary?: string;
   content: string;
   type: 'Question' | 'Decision' | 'Definition';
+  status?: 'open' | 'resolved';
   createdAt: string;
+  updatedAt?: string;
+  resolvedAt?: string;
 };
 
 export type LLMFunction = {
@@ -386,7 +433,7 @@ export type AuditLogEntry = {
   userEmail: string;
   projectId?: string;
   featureId?: string;
-  timestamp: any; // Firestore Timestamp or ISO string
+  timestamp: any; // ISO string or database-native timestamp payload
 };
 
 export type PRDSection = {
@@ -441,3 +488,5 @@ export type Blocker = {
   createdAt: string;
   updatedAt: string;
 };
+
+

@@ -24,3 +24,5 @@ describe('SyncIndicator', () => {
     expect(screen.getByText('Sync Error')).toBeInTheDocument();
   });
 });
+
+

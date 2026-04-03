@@ -1,14 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, Folder, Clock, ChevronRight, Trash2, Loader2, Search, Filter, Star, Archive, ExternalLink, X, AlertCircle, Check } from 'lucide-react';
-import { collection, addDoc, doc, updateDoc, deleteDoc, where } from '../lib/db/firestoreCompat';
+import { collection, addDoc, doc, updateDoc, deleteDoc, where } from '../lib/db/supabaseData';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
-import { db, auth } from '../firebase';
+import { db, auth } from '../lib/supabase/appClient';
 import { Project } from '../types';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '../lib/utils';
 import { useToast } from './Toast';
 import ConfirmModal from './ConfirmModal';
-import { useFirestore } from '../hooks/useFirestore';
+import { useSupabaseCollection } from '../hooks/useSupabaseCollection';
 import { useAuth } from '../context/AuthContext';
 
 interface DashboardProps {
@@ -17,7 +17,7 @@ interface DashboardProps {
 
 export default function Dashboard({ onSelectProject }: DashboardProps) {
   const { user } = useAuth();
-  const { data: projects, loading, error, add, update, remove } = useFirestore<Project>(
+  const { data: projects, loading, error, add, update, remove } = useSupabaseCollection<Project>(
     user ? 'projects' : null, 
     user ? [where('ownerId', '==', user.uid)] : []
   );
@@ -544,3 +544,5 @@ function ProjectCard({ project, onSelect, onToggleFavorite, onArchive, onDuplica
     </div>
   );
 }
+
+

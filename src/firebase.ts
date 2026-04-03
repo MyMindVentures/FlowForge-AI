@@ -1,4 +1,5 @@
 import { createClient, type Session, type User as SupabaseUser } from '@supabase/supabase-js';
+import { getAuthProviderCatalog, getOAuthProvider, isOAuthProviderId, type AuthProviderDescriptor, type AuthProviderId, type OAuthProviderId } from './lib/auth/providers';
 
 type ProviderInfo = {
   providerId: string;
@@ -19,10 +20,15 @@ export type AuthenticatedUser = {
   providerData: ProviderInfo[];
 };
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabasePublishableKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+export type { AuthProviderDescriptor, AuthProviderId, OAuthProviderId };
 
-const missingSupabaseConfigMessage = 'Supabase environment variables are missing. Set VITE_SUPABASE_URL and either VITE_SUPABASE_ANON_KEY or VITE_SUPABASE_PUBLISHABLE_KEY.';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabasePublishableKey =
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+
+const missingSupabaseConfigMessage = 'Supabase environment variables are missing. Set VITE_SUPABASE_URL and either VITE_SUPABASE_ANON_KEY, VITE_SUPABASE_PUBLISHABLE_KEY, or VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY.';
 
 export function isSupabaseConfigured() {
   return Boolean(supabaseUrl && supabasePublishableKey);
@@ -54,6 +60,18 @@ export const db = {
   provider: 'supabase',
 } as const;
 
+function getAuthRedirectUrl() {
+  if (import.meta.env.VITE_AUTH_REDIRECT_URL) {
+    return import.meta.env.VITE_AUTH_REDIRECT_URL;
+  }
+
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+
+  return undefined;
+}
+
 export function setCurrentUser(user: AuthenticatedUser | null) {
   currentUser = user;
 }
@@ -76,12 +94,78 @@ export function mapSupabaseUserToProviderData(user: SupabaseUser): ProviderInfo[
   }));
 }
 
-export async function signInWithGoogle() {
+export function getSupportedAuthProviders(): AuthProviderDescriptor[] {
+  return getAuthProviderCatalog();
+}
+
+export async function signInWithOAuthProvider(provider: OAuthProviderId) {
   requireSupabaseConfig();
-  const redirectTo = typeof window !== 'undefined' ? window.location.origin : undefined;
+  const redirectTo = getAuthRedirectUrl();
   const { error } = await supabase!.auth.signInWithOAuth({
-    provider: 'google',
+    provider,
     options: redirectTo ? { redirectTo } : undefined,
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function signInWithGoogle() {
+  await signInWithOAuthProvider('google');
+}
+
+export async function signInWithProvider(providerId: AuthProviderId) {
+  const oauthProvider = getOAuthProvider(providerId);
+  if (!oauthProvider || !isOAuthProviderId(oauthProvider)) {
+    throw new Error(`Unsupported OAuth provider: ${providerId}`);
+  }
+
+  await signInWithOAuthProvider(oauthProvider);
+}
+
+export async function requestMagicLink(email: string) {
+  requireSupabaseConfig();
+  const redirectTo = getAuthRedirectUrl();
+  const { error } = await supabase!.auth.signInWithOtp({
+    email,
+    options: {
+      shouldCreateUser: true,
+      emailRedirectTo: redirectTo,
+      data: {
+        flowforgeAuthMethod: 'magic_link',
+      },
+    },
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function requestEmailOneTimeCode(email: string) {
+  requireSupabaseConfig();
+  const { error } = await supabase!.auth.signInWithOtp({
+    email,
+    options: {
+      shouldCreateUser: true,
+      data: {
+        flowforgeAuthMethod: 'email_otp',
+      },
+    },
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function verifyEmailOneTimeCode(email: string, token: string) {
+  requireSupabaseConfig();
+  const { error } = await supabase!.auth.verifyOtp({
+    email,
+    token,
+    type: 'email',
   });
 
   if (error) {
@@ -121,3 +205,4 @@ export async function getInitialSessionUser() {
   }
   return data.session?.user ?? null;
 }
+

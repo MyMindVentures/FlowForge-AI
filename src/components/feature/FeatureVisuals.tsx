@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Image as ImageIcon, Loader2, Sparkles, Maximize2, RefreshCw, Terminal } from 'lucide-react';
-import { doc, updateDoc } from '../../lib/db/firestoreCompat';
-import { db } from '../../firebase';
+import { doc, updateDoc } from '../../lib/db/supabaseData';
+import { db } from '../../lib/supabase/appClient';
 import { Project, Feature } from '../../types';
 import { cn, resizeBase64Image } from '../../lib/utils';
 import { useToast } from '../Toast';
-import { handleFirestoreError, OperationType } from '../../lib/firestoreErrorHandler';
+import { handleDataOperationError, DataOperationType } from '../../lib/databaseErrorHandler';
 import { AgentOrchestrator, AgentTaskType } from '../../services/ai/orchestrator';
 import { AuditService, AuditAction } from '../../services/audit';
 
@@ -41,7 +41,7 @@ export default function FeatureVisuals({ project, feature }: FeatureVisualsProps
           visualUrl: resizedUrl,
           visualPrompt,
           updatedAt: new Date().toISOString(),
-        }).catch(e => handleFirestoreError(e, OperationType.UPDATE, `projects/${project.id}/features/${feature.id}`));
+        }).catch(e => handleDataOperationError(e, DataOperationType.UPDATE, `projects/${project.id}/features/${feature.id}`));
       }
       
       await AuditService.log(AuditAction.AI_GENERATION, { 
@@ -168,3 +168,5 @@ export default function FeatureVisuals({ project, feature }: FeatureVisualsProps
     </div>
   );
 }
+
+

@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Sparkles, Check, X, RefreshCw, Loader2, MessageSquare, User, Bot, Plus, History, Calendar, ChevronRight, Trash2, AlertCircle, ArrowLeft } from 'lucide-react';
-import { collection, addDoc, query, where, onSnapshot, orderBy, limit, writeBatch, doc, updateDoc, deleteDoc, setDoc } from '../lib/db/firestoreCompat';
-import { db, auth } from '../firebase';
+import { collection, addDoc, query, where, onSnapshot, orderBy, limit, writeBatch, doc, updateDoc, deleteDoc, setDoc } from '../lib/db/supabaseData';
+import { db, auth } from '../lib/supabase/appClient';
 import { Project, ChatMessage, Suggestion, Session, Feature } from '../types';
 import { generateSuggestions, generateFeatureDetails } from '../services/geminiService';
 import { cn } from '../lib/utils';
 import { format } from 'date-fns';
-import { handleFirestoreError, OperationType } from '../lib/firestoreErrorHandler';
+import { handleDataOperationError, DataOperationType } from '../lib/databaseErrorHandler';
 import { useToast } from './Toast';
 import ConfirmModal from './ConfirmModal';
 import { motion, AnimatePresence } from 'motion/react';
@@ -87,7 +87,7 @@ export default function Workspace({ project, onApproveSuggestion }: WorkspacePro
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ChatMessage[];
       setMessages(msgs);
-    }, (error) => handleFirestoreError(error, OperationType.GET, `projects/${project.id}/chats`));
+    }, (error) => handleDataOperationError(error, DataOperationType.GET, `projects/${project.id}/chats`));
 
     return () => unsubscribe();
   }, [project?.id, currentSession?.id]);
@@ -107,7 +107,7 @@ export default function Workspace({ project, onApproveSuggestion }: WorkspacePro
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const sugs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Suggestion[];
       setSuggestions(sugs);
-    }, (error) => handleFirestoreError(error, OperationType.GET, `projects/${project.id}/suggestions`));
+    }, (error) => handleDataOperationError(error, DataOperationType.GET, `projects/${project.id}/suggestions`));
 
     return () => unsubscribe();
   }, [project?.id, currentSession?.id]);
@@ -209,7 +209,7 @@ export default function Workspace({ project, onApproveSuggestion }: WorkspacePro
         role: 'user',
         content: userMsg,
         timestamp: new Date().toISOString(),
-      }).catch(e => handleFirestoreError(e, OperationType.CREATE, `projects/${project.id}/chats`));
+      }).catch(e => handleDataOperationError(e, DataOperationType.CREATE, `projects/${project.id}/chats`));
 
       const aiSuggestions = await generateSuggestions(
         userMsg, 
@@ -224,7 +224,7 @@ export default function Workspace({ project, onApproveSuggestion }: WorkspacePro
         role: 'assistant',
         content: `I've analyzed your idea and generated ${aiSuggestions.length} feature suggestions for you to review.`,
         timestamp: new Date().toISOString(),
-      }).catch(e => handleFirestoreError(e, OperationType.CREATE, `projects/${project.id}/chats`));
+      }).catch(e => handleDataOperationError(e, DataOperationType.CREATE, `projects/${project.id}/chats`));
 
       const batch = writeBatch(db);
       aiSuggestions.forEach((sug) => {
@@ -237,7 +237,7 @@ export default function Workspace({ project, onApproveSuggestion }: WorkspacePro
           timestamp: new Date().toISOString(),
         });
       });
-      await batch.commit().catch(e => handleFirestoreError(e, OperationType.WRITE, `projects/${project.id}/suggestions`));
+      await batch.commit().catch(e => handleDataOperationError(e, DataOperationType.WRITE, `projects/${project.id}/suggestions`));
       
       showToast('New suggestions generated!');
       if (window.innerWidth < 1024) {
@@ -276,7 +276,7 @@ export default function Workspace({ project, onApproveSuggestion }: WorkspacePro
       };
 
       await setDoc(featureRef, featureData)
-        .catch(e => handleFirestoreError(e, OperationType.CREATE, `projects/${project.id}/features`));
+        .catch(e => handleDataOperationError(e, DataOperationType.CREATE, `projects/${project.id}/features`));
 
       const batch = writeBatch(db);
       details.comments.forEach((comment) => {
@@ -291,7 +291,7 @@ export default function Workspace({ project, onApproveSuggestion }: WorkspacePro
       const sugRef = doc(db, 'projects', project.id, 'suggestions', suggestion.id);
       batch.update(sugRef, { status: 'approved' });
 
-      await batch.commit().catch(e => handleFirestoreError(e, OperationType.WRITE, `projects/${project.id}/features`));
+      await batch.commit().catch(e => handleDataOperationError(e, DataOperationType.WRITE, `projects/${project.id}/features`));
       
       showToast('Feature card forged!');
       onApproveSuggestion(suggestion);
@@ -309,7 +309,7 @@ export default function Workspace({ project, onApproveSuggestion }: WorkspacePro
       const sugRef = doc(db, 'projects', project.id, 'suggestions', rejectModal.suggestionId);
       const batch = writeBatch(db);
       batch.update(sugRef, { status: 'rejected' });
-      await batch.commit().catch(e => handleFirestoreError(e, OperationType.WRITE, `projects/${project.id}/suggestions`));
+      await batch.commit().catch(e => handleDataOperationError(e, DataOperationType.WRITE, `projects/${project.id}/suggestions`));
       showToast('Suggestion rejected');
       setRejectModal({ isOpen: false, suggestionId: null });
     } catch (error) {
@@ -694,3 +694,5 @@ export default function Workspace({ project, onApproveSuggestion }: WorkspacePro
     </div>
   );
 }
+
+

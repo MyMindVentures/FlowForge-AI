@@ -10,7 +10,7 @@ let mockUser = {
 };
 
 // Mock Firebase and AuditService
-vi.mock('../firebase', () => ({
+vi.mock('../lib/supabase/appClient', () => ({
   auth: {
     get currentUser() {
       return mockUser;
@@ -136,3 +136,5 @@ describe('ProjectSettings', () => {
     mockUser = { uid: 'user1', email: 'lacometta33@gmail.com', displayName: 'Test User' };
   });
 });
+
+

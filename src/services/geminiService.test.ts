@@ -9,7 +9,7 @@ import {
 } from './geminiService';
 
 // Mock Firebase
-vi.mock('../firebase', () => ({
+vi.mock('../lib/supabase/appClient', () => ({
   db: {},
   auth: {
     currentUser: { uid: 'test-user-id', providerData: [] }
@@ -17,7 +17,7 @@ vi.mock('../firebase', () => ({
   supabase: {}
 }));
 
-vi.mock('../lib/db/firestoreCompat', () => ({
+vi.mock('../lib/db/supabaseData', () => ({
   collection: vi.fn(),
   addDoc: vi.fn(),
   serverTimestamp: vi.fn()
@@ -174,7 +174,7 @@ describe('geminiService', () => {
 
   describe('logging errors', () => {
     it('handles logAIUsage error', async () => {
-      const { addDoc } = await import('../lib/db/firestoreCompat');
+      const { addDoc } = await import('../lib/db/supabaseData');
       (addDoc as any).mockRejectedValueOnce(new Error('Firestore Error'));
       
       mockGenerateContent.mockResolvedValue({ text: '[]' });
@@ -185,7 +185,7 @@ describe('geminiService', () => {
     });
 
     it('handles logAIError error', async () => {
-      const { addDoc } = await import('../lib/db/firestoreCompat');
+      const { addDoc } = await import('../lib/db/supabaseData');
       (addDoc as any).mockRejectedValueOnce(new Error('Firestore Error'));
       
       mockGenerateContent.mockRejectedValue(new Error('AI Error'));
@@ -205,3 +205,5 @@ describe('geminiService', () => {
     });
   });
 });
+
+

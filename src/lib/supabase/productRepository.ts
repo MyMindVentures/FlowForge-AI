@@ -6,8 +6,10 @@ import type {
   ProductPageLayoutInsert,
   ProductPageLayoutRow,
   ProductPageRow,
+  ProductProjectOverviewRow,
   ProductProjectInsert,
   ProductProjectRow,
+  ProductProjectUpdate,
   ProductUserflowInsert,
   ProductUserflowPageRow,
   ProductUserflowRow,
@@ -27,11 +29,69 @@ export async function listProductProjects() {
   return (data ?? []) as ProductProjectRow[];
 }
 
+export async function listProductProjectOverviews(options?: {
+  visibility?: 'private' | 'internal' | 'shared' | 'public';
+  limit?: number;
+}) {
+  const supabase = getSupabaseClient();
+  let query = supabase
+    .from('project_overviews')
+    .select('*')
+    .order('featured_rank', { ascending: false })
+    .order('last_activity', { ascending: false });
+
+  if (options?.visibility) {
+    query = query.eq('visibility', options.visibility);
+  }
+
+  if (options?.limit) {
+    query = query.limit(options.limit);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []) as ProductProjectOverviewRow[];
+}
+
+export async function getProductProjectBySlug(slug: string) {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from('projects')
+    .select('*')
+    .eq('slug', slug)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? null) as ProductProjectRow | null;
+}
+
 export async function createProductProject(project: ProductProjectInsert) {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from('projects')
     .insert(project)
+    .select()
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data as ProductProjectRow;
+}
+
+export async function upsertProductProject(project: ProductProjectInsert) {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from('projects')
+    .upsert(project, { onConflict: 'slug' })
     .select()
     .single();
 
@@ -161,3 +221,4 @@ export async function getUserflowSteps(userflowId: string) {
 
   return (data ?? []) as ProductUserflowPageRow[];
 }
+

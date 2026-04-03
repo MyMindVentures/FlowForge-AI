@@ -17,8 +17,8 @@ vi.mock('../context/AuthContext', () => ({
   })
 }));
 
-vi.mock('../hooks/useFirestore', () => ({
-  useFirestore: () => ({
+vi.mock('../hooks/useSupabaseCollection', () => ({
+  useSupabaseCollection: () => ({
     data: [],
     loading: false,
     error: null,
@@ -41,3 +41,5 @@ describe('Dashboard', () => {
     expect(screen.getByText('No projects found')).toBeInTheDocument();
   });
 });
+
+

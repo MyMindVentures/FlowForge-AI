@@ -1,27 +1,26 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useFirestore } from '../../../src/hooks/useFirestore';
-import { onSnapshot, addDoc, updateDoc, deleteDoc } from '../../../src/lib/db/firestoreCompat';
+import { useSupabaseCollection } from '../../../src/hooks/useSupabaseCollection';
+import { onSnapshot, addDoc, updateDoc, deleteDoc } from '../../../src/lib/db/supabaseData';
 
-// Mock runtime bootstrap
-vi.mock('../../../src/firebase', () => ({
+vi.mock('../../../src/lib/supabase/appClient', () => ({
   db: {},
   supabase: {}
 }));
 
-vi.mock('../../../src/lib/firestoreErrorHandler', () => ({
-  handleFirestoreError: vi.fn(),
-  OperationType: { LIST: 'list', CREATE: 'create', UPDATE: 'update', DELETE: 'delete' }
+vi.mock('../../../src/lib/databaseErrorHandler', () => ({
+  handleDataOperationError: vi.fn(),
+  DataOperationType: { LIST: 'list', CREATE: 'create', UPDATE: 'update', DELETE: 'delete', WRITE: 'write' }
 }));
 
-vi.mock('../../../src/lib/db/firestoreCompat', () => {
-  const mockOnSnapshot = vi.fn((q, onNext, onError) => {
+vi.mock('../../../src/lib/db/supabaseData', () => {
+  const mockOnSnapshot = vi.fn((_q, onNext, _onError) => {
     onNext({
       docs: [
         { id: '1', data: () => ({ name: 'Item 1' }) }
       ]
     });
-    return vi.fn(); // Unsubscribe
+    return vi.fn();
   });
 
   return {
@@ -40,13 +39,13 @@ vi.mock('../../../src/lib/db/firestoreCompat', () => {
   };
 });
 
-describe('useFirestore', () => {
+describe('useSupabaseCollection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('should fetch data on mount', async () => {
-    const { result } = renderHook(() => useFirestore('test-collection'));
+    const { result } = renderHook(() => useSupabaseCollection('test-collection'));
 
     expect(result.current.loading).toBe(false);
     expect(result.current.data).toEqual([{ id: '1', name: 'Item 1' }]);
@@ -54,19 +53,19 @@ describe('useFirestore', () => {
   });
 
   it('should handle onSnapshot error', async () => {
-    (onSnapshot as any).mockImplementationOnce((q, onNext, onError) => {
+    (onSnapshot as any).mockImplementationOnce((_q, _onNext, onError) => {
       onError(new Error('Snapshot error'));
       return vi.fn();
     });
 
-    const { result } = renderHook(() => useFirestore('test-collection'));
+    const { result } = renderHook(() => useSupabaseCollection('test-collection'));
 
     expect(result.current.error).toBeDefined();
     expect(result.current.syncStatus).toBe('error');
   });
 
   it('should handle null collectionPath', async () => {
-    const { result } = renderHook(() => useFirestore(null));
+    const { result } = renderHook(() => useSupabaseCollection(null));
 
     expect(result.current.loading).toBe(false);
     expect(result.current.data).toEqual([]);
@@ -75,7 +74,7 @@ describe('useFirestore', () => {
   });
 
   it('add should call addDoc and update status', async () => {
-    const { result } = renderHook(() => useFirestore('test-collection'));
+    const { result } = renderHook(() => useSupabaseCollection('test-collection'));
 
     let id;
     await act(async () => {
@@ -89,7 +88,7 @@ describe('useFirestore', () => {
 
   it('add should handle error', async () => {
     (addDoc as any).mockRejectedValueOnce(new Error('Add error'));
-    const { result } = renderHook(() => useFirestore('test-collection'));
+    const { result } = renderHook(() => useSupabaseCollection('test-collection'));
 
     await act(async () => {
       await result.current.add({ name: 'New Item' });
@@ -99,7 +98,7 @@ describe('useFirestore', () => {
   });
 
   it('update should call updateDoc', async () => {
-    const { result } = renderHook(() => useFirestore('test-collection'));
+    const { result } = renderHook(() => useSupabaseCollection('test-collection'));
 
     await act(async () => {
       await result.current.update('1', { name: 'Updated Item' });
@@ -111,7 +110,7 @@ describe('useFirestore', () => {
 
   it('update should handle error', async () => {
     (updateDoc as any).mockRejectedValueOnce(new Error('Update error'));
-    const { result } = renderHook(() => useFirestore('test-collection'));
+    const { result } = renderHook(() => useSupabaseCollection('test-collection'));
 
     await act(async () => {
       await result.current.update('1', { name: 'Updated Item' });
@@ -121,8 +120,8 @@ describe('useFirestore', () => {
   });
 
   it('set should call setDoc and update status', async () => {
-    const { setDoc } = await import('../../../src/lib/db/firestoreCompat');
-    const { result } = renderHook(() => useFirestore('test-collection'));
+    const { setDoc } = await import('../../../src/lib/db/supabaseData');
+    const { result } = renderHook(() => useSupabaseCollection('test-collection'));
 
     await act(async () => {
       await result.current.set('1', { name: 'Set Item' });
@@ -133,9 +132,9 @@ describe('useFirestore', () => {
   });
 
   it('set should handle error', async () => {
-    const { setDoc } = await import('../../../src/lib/db/firestoreCompat');
+    const { setDoc } = await import('../../../src/lib/db/supabaseData');
     (setDoc as any).mockRejectedValueOnce(new Error('Set error'));
-    const { result } = renderHook(() => useFirestore('test-collection'));
+    const { result } = renderHook(() => useSupabaseCollection('test-collection'));
 
     await act(async () => {
       await result.current.set('1', { name: 'Set Item' });
@@ -145,7 +144,7 @@ describe('useFirestore', () => {
   });
 
   it('remove should call deleteDoc', async () => {
-    const { result } = renderHook(() => useFirestore('test-collection'));
+    const { result } = renderHook(() => useSupabaseCollection('test-collection'));
 
     await act(async () => {
       await result.current.remove('1');
@@ -157,7 +156,7 @@ describe('useFirestore', () => {
 
   it('remove should handle error', async () => {
     (deleteDoc as any).mockRejectedValueOnce(new Error('Delete error'));
-    const { result } = renderHook(() => useFirestore('test-collection'));
+    const { result } = renderHook(() => useSupabaseCollection('test-collection'));
 
     await act(async () => {
       await result.current.remove('1');

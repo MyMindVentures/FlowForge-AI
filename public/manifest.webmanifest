@@ -1,0 +1,26 @@
+{
+  "name": "FlowForge AI",
+  "short_name": "FlowForge",
+  "description": "Tablet-first product thinking workspace with installable offline shell and enterprise-ready authentication.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#050816",
+  "theme_color": "#0d9488",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

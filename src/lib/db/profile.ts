@@ -1,17 +1,41 @@
 import type { User as SupabaseUser } from '@supabase/supabase-js';
-import { getDefaultAdminEmail, mapSupabaseUserToProviderData, setCurrentUser, supabase, type AuthenticatedUser } from '../../firebase';
+import { getDefaultAdminEmail, mapSupabaseUserToProviderData, setCurrentUser, supabase, type AuthenticatedUser } from '../../lib/supabase/appClient';
 import type { UserProfile } from '../../types';
 import { mapDbRecordToApp } from './pathMap';
 
 function defaultProfile(user: SupabaseUser): UserProfile {
   const isAdmin = (user.email || '').toLowerCase() === getDefaultAdminEmail().toLowerCase();
   const now = new Date().toISOString();
+  const firstName = user.user_metadata?.first_name as string | undefined;
+  const lastName = user.user_metadata?.last_name as string | undefined;
+  const aliasName = user.user_metadata?.alias_name as string | undefined;
+  const githubUsername = (user.user_metadata?.user_name as string | undefined)
+    || (user.user_metadata?.preferred_username as string | undefined)
+    || undefined;
+  const githubProfileUrl = (user.user_metadata?.profile as string | undefined)
+    || (user.user_metadata?.html_url as string | undefined)
+    || undefined;
+  const githubAvatarUrl = (user.user_metadata?.avatar_url as string | undefined) || undefined;
 
   return {
     uid: user.id,
     email: user.email || '',
     displayName: (user.user_metadata?.full_name as string | undefined) || (user.user_metadata?.name as string | undefined) || user.email || 'Anonymous',
     photoURL: (user.user_metadata?.avatar_url as string | undefined) || undefined,
+    firstName,
+    lastName,
+    aliasName,
+    secondaryEmail: (user.user_metadata?.secondary_email as string | undefined) || undefined,
+    phone: (user.user_metadata?.phone as string | undefined) || undefined,
+    jobTitle: (user.user_metadata?.job_title as string | undefined) || undefined,
+    functionTitle: (user.user_metadata?.function_title as string | undefined) || undefined,
+    organizationName: (user.user_metadata?.organization_name as string | undefined) || undefined,
+    githubUsername,
+    githubProfileUrl,
+    githubPrimaryEmail: (user.user_metadata?.github_primary_email as string | undefined) || undefined,
+    githubAvatarUrl,
+    githubUserId: (user.user_metadata?.github_user_id as string | undefined) || undefined,
+    bio: (user.user_metadata?.bio as string | undefined) || undefined,
     role: isAdmin ? 'Admin' : 'Builder',
     onboarded: isAdmin,
     storytellingCompleted: isAdmin,
@@ -97,6 +121,20 @@ export async function ensureUserProfile(sessionUser: SupabaseUser) {
   const insertPayload = {
     id: sessionUser.id,
     ...updatePayload,
+    first_name: baseProfile.firstName || null,
+    last_name: baseProfile.lastName || null,
+    alias_name: baseProfile.aliasName || null,
+    secondary_email: baseProfile.secondaryEmail || null,
+    phone: baseProfile.phone || null,
+    job_title: baseProfile.jobTitle || null,
+    function_title: baseProfile.functionTitle || null,
+    organization_name: baseProfile.organizationName || null,
+    github_username: baseProfile.githubUsername || null,
+    github_profile_url: baseProfile.githubProfileUrl || null,
+    github_primary_email: baseProfile.githubPrimaryEmail || null,
+    github_avatar_url: baseProfile.githubAvatarUrl || null,
+    github_user_id: baseProfile.githubUserId || null,
+    bio: baseProfile.bio || null,
     role: baseProfile.role,
     onboarded: baseProfile.onboarded,
     storytelling_completed: baseProfile.storytellingCompleted,
@@ -119,3 +157,4 @@ export async function ensureUserProfile(sessionUser: SupabaseUser) {
   setCurrentUser(authUser);
   return { profile, authUser };
 }
+

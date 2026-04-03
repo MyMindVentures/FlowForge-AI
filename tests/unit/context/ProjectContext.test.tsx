@@ -2,15 +2,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { ProjectProvider, useProject } from '../../../src/context/ProjectContext';
 import { useAuth } from '../../../src/context/AuthContext';
-import { useFirestore } from '../../../src/hooks/useFirestore';
+import { useSupabaseCollection } from '../../../src/hooks/useSupabaseCollection';
 import React from 'react';
 
 vi.mock('../../../src/context/AuthContext', () => ({
   useAuth: vi.fn()
 }));
 
-vi.mock('../../../src/hooks/useFirestore', () => ({
-  useFirestore: vi.fn()
+vi.mock('../../../src/hooks/useSupabaseCollection', () => ({
+  useSupabaseCollection: vi.fn()
 }));
 
 describe('ProjectContext', () => {
@@ -25,11 +25,12 @@ describe('ProjectContext', () => {
 
   it('should initialize with no selected project', () => {
     (useAuth as any).mockReturnValue({ user: null });
-    (useFirestore as any).mockReturnValue({
+    (useSupabaseCollection as any).mockReturnValue({
       data: [],
       loading: false,
       syncStatus: 'synced',
       update: vi.fn(),
+      set: vi.fn(),
       add: vi.fn(),
       remove: vi.fn()
     });
@@ -46,11 +47,11 @@ describe('ProjectContext', () => {
     (useAuth as any).mockReturnValue({ user: { uid: 'user-1' } });
     
     const mockProjects = [{ id: 'proj-1', name: 'Project 1' }];
-    (useFirestore as any).mockImplementation((path: string) => {
+    (useSupabaseCollection as any).mockImplementation((path: string) => {
       if (path === 'projects') {
-        return { data: mockProjects, loading: false, update: vi.fn() };
+        return { data: mockProjects, loading: false, update: vi.fn(), set: vi.fn(), add: vi.fn(), remove: vi.fn() };
       }
-      return { data: [], loading: false, add: vi.fn(), update: vi.fn(), remove: vi.fn() };
+      return { data: [], loading: false, add: vi.fn(), update: vi.fn(), set: vi.fn(), remove: vi.fn() };
     });
 
     const { result } = renderHook(() => useProject(), { wrapper });
@@ -61,10 +62,11 @@ describe('ProjectContext', () => {
   it('setSelectedProject should update state and localStorage', () => {
     (useAuth as any).mockReturnValue({ user: { uid: 'user-1' } });
     const mockProjects = [{ id: 'proj-1', name: 'Project 1' }];
-    (useFirestore as any).mockReturnValue({
+    (useSupabaseCollection as any).mockReturnValue({
       data: mockProjects,
       loading: false,
       update: vi.fn(),
+      set: vi.fn(),
       add: vi.fn(),
       remove: vi.fn()
     });
@@ -85,16 +87,17 @@ describe('ProjectContext', () => {
     expect(localStorage.getItem('selected_project_id')).toBeNull();
   });
 
-  it('updateProject should call firestore update', async () => {
+  it('updateProject should upsert the selected project', async () => {
     localStorage.setItem('selected_project_id', 'proj-1');
     (useAuth as any).mockReturnValue({ user: { uid: 'user-1' } });
     
     const mockUpdate = vi.fn();
-    (useFirestore as any).mockImplementation((path: string) => {
+    const mockSet = vi.fn();
+    (useSupabaseCollection as any).mockImplementation((path: string) => {
       if (path === 'projects') {
-        return { data: [{ id: 'proj-1' }], loading: false, update: mockUpdate };
+        return { data: [{ id: 'proj-1' }], loading: false, update: mockUpdate, set: mockSet, add: vi.fn(), remove: vi.fn() };
       }
-      return { data: [], loading: false };
+      return { data: [], loading: false, add: vi.fn(), update: vi.fn(), set: vi.fn(), remove: vi.fn() };
     });
 
     const { result } = renderHook(() => useProject(), { wrapper });
@@ -103,13 +106,14 @@ describe('ProjectContext', () => {
       await result.current.updateProject({ name: 'Updated' });
     });
 
-    expect(mockUpdate).toHaveBeenCalledWith('proj-1', { name: 'Updated' });
+    expect(mockSet).toHaveBeenCalledWith('proj-1', { id: 'proj-1', name: 'Updated' });
+    expect(mockUpdate).not.toHaveBeenCalled();
   });
 
   it('updateProject should do nothing if no selected project', async () => {
     (useAuth as any).mockReturnValue({ user: { uid: 'user-1' } });
     const mockUpdate = vi.fn();
-    (useFirestore as any).mockReturnValue({ data: [], loading: false, update: mockUpdate });
+    (useSupabaseCollection as any).mockReturnValue({ data: [], loading: false, update: mockUpdate, set: vi.fn(), add: vi.fn(), remove: vi.fn() });
 
     const { result } = renderHook(() => useProject(), { wrapper });
 
@@ -128,14 +132,14 @@ describe('ProjectContext', () => {
     const mockUpdate = vi.fn();
     const mockRemove = vi.fn();
     
-    (useFirestore as any).mockImplementation((path: string) => {
+    (useSupabaseCollection as any).mockImplementation((path: string) => {
       if (path === 'projects') {
-        return { data: [{ id: 'proj-1' }], loading: false };
+        return { data: [{ id: 'proj-1' }], loading: false, add: vi.fn(), update: vi.fn(), set: vi.fn(), remove: vi.fn() };
       }
       if (path?.includes('versions')) {
         return { data: [], loading: false, add: mockAdd, update: mockUpdate, remove: mockRemove };
       }
-      return { data: [], loading: false };
+      return { data: [], loading: false, add: vi.fn(), update: vi.fn(), set: vi.fn(), remove: vi.fn() };
     });
 
     const { result } = renderHook(() => useProject(), { wrapper });
@@ -156,14 +160,14 @@ describe('ProjectContext', () => {
     (useAuth as any).mockReturnValue({ user: { uid: 'user-1' } });
     
     const mockSet = vi.fn();
-    (useFirestore as any).mockImplementation((path: string) => {
+    (useSupabaseCollection as any).mockImplementation((path: string) => {
       if (path === 'projects') {
-        return { data: [{ id: 'proj-1' }], loading: false };
+        return { data: [{ id: 'proj-1' }], loading: false, add: vi.fn(), update: vi.fn(), set: vi.fn(), remove: vi.fn() };
       }
       if (path?.includes('readiness_checks')) {
         return { data: [], loading: false, add: vi.fn(), set: mockSet };
       }
-      return { data: [], loading: false };
+      return { data: [], loading: false, add: vi.fn(), update: vi.fn(), set: vi.fn(), remove: vi.fn() };
     });
 
     const { result } = renderHook(() => useProject(), { wrapper });
@@ -177,7 +181,7 @@ describe('ProjectContext', () => {
 
   it('version operations should throw if no selected project', async () => {
     (useAuth as any).mockReturnValue({ user: { uid: 'user-1' } });
-    (useFirestore as any).mockReturnValue({ data: [], loading: false });
+    (useSupabaseCollection as any).mockReturnValue({ data: [], loading: false, add: vi.fn(), update: vi.fn(), set: vi.fn(), remove: vi.fn() });
 
     const { result } = renderHook(() => useProject(), { wrapper });
 
@@ -192,3 +196,5 @@ describe('ProjectContext', () => {
     consoleSpy.mockRestore();
   });
 });
+
+

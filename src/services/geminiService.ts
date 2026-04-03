@@ -1,8 +1,8 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Suggestion, Feature, Comment, Project, UsageLog, ErrorLog } from "../types";
-import { collection, addDoc, serverTimestamp } from "../lib/db/firestoreCompat";
-import { db, auth } from "../firebase";
-import { handleFirestoreError, OperationType } from "../lib/firestoreErrorHandler";
+import { collection, addDoc, serverTimestamp } from "../lib/db/supabaseData";
+import { db, auth } from "../lib/supabase/appClient";
+import { handleDataOperationError, DataOperationType } from "../lib/databaseErrorHandler";
 
 const getApiKey = () => {
   try {
@@ -51,7 +51,7 @@ async function logAIUsage(projectId: string, model: string, prompt: string, resp
     await addDoc(collection(db, 'admin', 'ai', 'usage'), usage);
   } catch (error) {
     try {
-      handleFirestoreError(error, OperationType.CREATE, 'admin/ai/usage');
+      handleDataOperationError(error, DataOperationType.CREATE, 'admin/ai/usage');
     } catch (e) {
       console.error('Failed to log AI usage', e);
     }
@@ -72,7 +72,7 @@ async function logAIError(projectId: string, model: string, errorCode: string, e
     await addDoc(collection(db, 'admin', 'ai', 'errors'), errorLog);
   } catch (error) {
     try {
-      handleFirestoreError(error, OperationType.CREATE, 'admin/ai/errors');
+      handleDataOperationError(error, DataOperationType.CREATE, 'admin/ai/errors');
     } catch (e) {
       console.error('Failed to log AI error', e);
     }
@@ -380,3 +380,5 @@ export async function generateAssetTags(assetName: string, assetType: string, pr
 
   return safeJsonParse(response.text, []);
 }
+
+

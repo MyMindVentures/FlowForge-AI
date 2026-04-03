@@ -81,10 +81,21 @@ export function mapLegacyProjectToProductProject(project: Project): ProductProje
     name: project.name,
     slug: slugify(project.name),
     description: project.description,
+    tagline: project.description,
+    category: 'legacy-project',
+    tags: [],
+    visibility: 'private',
     platform: mapProjectPlatform(),
     status: mapProjectStatus(project.status),
     version: '1.0.0',
     owner_auth_id: project.ownerId,
+    app_icon_url: null,
+    hero_image_url: null,
+    demo_url: null,
+    source_url: null,
+    featured_rank: 0,
+    last_synced_at: null,
+    catalog_metadata: {},
   };
 }
 
@@ -202,3 +213,4 @@ export function mapLegacyPageComponentsToPlacedComponents(
     notes: null,
   }));
 }
+

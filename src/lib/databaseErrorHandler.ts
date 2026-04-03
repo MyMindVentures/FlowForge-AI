@@ -1,6 +1,6 @@
-import { auth } from '../firebase';
+import { auth } from './supabase/appClient';
 
-export enum OperationType {
+export enum DataOperationType {
   CREATE = 'create',
   UPDATE = 'update',
   DELETE = 'delete',
@@ -9,9 +9,9 @@ export enum OperationType {
   WRITE = 'write',
 }
 
-export interface FirestoreErrorInfo {
+export interface DataOperationErrorInfo {
   error: string;
-  operationType: OperationType;
+  operationType: DataOperationType;
   path: string | null;
   authInfo: {
     userId: string | undefined;
@@ -28,8 +28,8 @@ export interface FirestoreErrorInfo {
   }
 }
 
-export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
-  const errInfo: FirestoreErrorInfo = {
+export function handleDataOperationError(error: unknown, operationType: DataOperationType, path: string | null) {
+  const errInfo: DataOperationErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {
       userId: auth.currentUser?.uid,
@@ -46,7 +46,9 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     },
     operationType,
     path
-  }
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  };
+
+  console.error('Database Operation Error: ', JSON.stringify(errInfo));
   throw new Error(JSON.stringify(errInfo));
 }
+

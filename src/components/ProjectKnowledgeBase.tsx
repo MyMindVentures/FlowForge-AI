@@ -391,3 +391,5 @@ export default function ProjectKnowledgeBase({ project, features, onUpdate, onBa
     </div>
   );
 }
+
+

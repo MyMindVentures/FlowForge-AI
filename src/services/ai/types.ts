@@ -184,3 +184,5 @@ export const UIArchitectureSchema = {
   },
   required: ['pages', 'components', 'styleSystem']
 };
+
+

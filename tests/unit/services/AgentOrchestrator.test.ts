@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AgentOrchestrator, AgentTaskType } from '../../../src/services/ai/orchestrator';
 import { AIFunctions } from '../../../src/services/ai/functions';
-import { handleFirestoreError } from '../../../src/lib/firestoreErrorHandler';
+import { handleDataOperationError } from '../../../src/lib/databaseErrorHandler';
 
 // Mock Firebase
-vi.mock('../../../src/firebase', () => ({
+vi.mock('../../../src/lib/supabase/appClient', () => ({
   db: {},
   auth: {
     currentUser: { uid: 'test-user-id' }
@@ -15,16 +15,16 @@ vi.mock('../../../src/firebase', () => ({
 const mockAddDoc = vi.fn().mockResolvedValue({ id: 'log-id' });
 const mockUpdateDoc = vi.fn().mockResolvedValue({});
 
-vi.mock('../../../src/lib/db/firestoreCompat', () => ({
+vi.mock('../../../src/lib/db/supabaseData', () => ({
   collection: vi.fn(),
   addDoc: (...args: any[]) => mockAddDoc(...args),
   doc: vi.fn(),
   updateDoc: (...args: any[]) => mockUpdateDoc(...args)
 }));
 
-vi.mock('../../../src/lib/firestoreErrorHandler', () => ({
-  handleFirestoreError: vi.fn(),
-  OperationType: { CREATE: 'create', UPDATE: 'update' }
+vi.mock('../../../src/lib/databaseErrorHandler', () => ({
+  handleDataOperationError: vi.fn(),
+  DataOperationType: { CREATE: 'create', UPDATE: 'update' }
 }));
 
 // Mock AIFunctions
@@ -262,7 +262,7 @@ describe('AgentOrchestrator', () => {
     mockAddDoc.mockRejectedValueOnce(new Error('Firestore error'));
     
     await expect(AgentOrchestrator.runTask(AgentTaskType.RESOLVE_CONTEXT, {})).rejects.toThrow('Firestore error');
-    expect(handleFirestoreError).toHaveBeenCalled();
+    expect(handleDataOperationError).toHaveBeenCalled();
   });
 
   it('updateLog should handle firestore error', async () => {
@@ -270,6 +270,8 @@ describe('AgentOrchestrator', () => {
     mockUpdateDoc.mockRejectedValueOnce(new Error('Firestore error'));
     
     await AgentOrchestrator.runTask(AgentTaskType.RESOLVE_CONTEXT, {});
-    expect(handleFirestoreError).toHaveBeenCalled();
+    expect(handleDataOperationError).toHaveBeenCalled();
   });
 });
+
+

@@ -3,7 +3,10 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
 import { ToastProvider } from './components/Toast.tsx';
+import { registerServiceWorker } from './pwa/registerServiceWorker.ts';
 import './index.css';
+
+registerServiceWorker();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -14,3 +17,5 @@ createRoot(document.getElementById('root')!).render(
     </ErrorBoundary>
   </StrictMode>,
 );
+
+

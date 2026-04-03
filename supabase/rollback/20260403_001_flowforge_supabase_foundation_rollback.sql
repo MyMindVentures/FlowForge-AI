@@ -22,6 +22,7 @@ drop table if exists public.ui_components cascade;
 drop table if exists public.ui_pages cascade;
 drop table if exists public.ui_layouts cascade;
 drop table if exists public.project_versions cascade;
+drop table if exists public.assets cascade;
 drop table if exists public.feature_comments cascade;
 drop table if exists public.features cascade;
 drop table if exists public.sessions cascade;

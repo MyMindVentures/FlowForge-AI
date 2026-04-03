@@ -34,9 +34,27 @@
 }
 
 @layer base {
+  :root {
+    color-scheme: dark;
+  }
+
   body {
     @apply bg-background text-white font-sans antialiased;
     -webkit-tap-highlight-color: transparent;
+    min-height: 100dvh;
+    overscroll-behavior: none;
+  }
+
+  #root {
+    min-height: 100dvh;
+  }
+
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
   }
 
   /* Custom Scrollbar */
@@ -58,6 +76,11 @@
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
   }
+
+  .safe-area-pb {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+
   .pt-safe {
     padding-top: env(safe-area-inset-top);
   }
@@ -79,4 +102,16 @@
   .markdown-body code { @apply bg-white/5 px-1.5 py-0.5 rounded font-mono text-sm text-indigo-300; }
   .markdown-body pre { @apply bg-[#0d0d0d] p-4 rounded-2xl border border-white/5 overflow-x-auto my-6; }
   .markdown-body pre code { @apply bg-transparent p-0 text-gray-300; }
+}
+
+@media (pointer: coarse) {
+  @layer base {
+    button,
+    input,
+    select,
+    textarea {
+      min-height: 44px;
+      font-size: 16px;
+    }
+  }
 }

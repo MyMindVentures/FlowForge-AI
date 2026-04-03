@@ -3,7 +3,7 @@ import { LayoutDashboard, MessageSquare, Bell, Shield, Settings, LogOut, Bot } f
 import { cn } from '../lib/utils';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import SyncIndicator from './SyncIndicator';
-import { SyncStatus } from '../hooks/useFirestore';
+import { SyncStatus } from '../hooks/useSupabaseCollection';
 import { useProject } from '../context/ProjectContext';
 
 import ErrorBoundary from './ErrorBoundary';
@@ -165,3 +165,5 @@ export default function Layout({ children, projectName, onLogout, isAdmin = fals
     </div>
   );
 }
+
+

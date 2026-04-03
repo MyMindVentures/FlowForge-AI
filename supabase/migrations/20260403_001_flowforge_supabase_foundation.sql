@@ -17,6 +17,48 @@ begin
 end;
 $$;
 
+create table if not exists public.app_users (
+  id text primary key,
+  auth_user_id uuid unique references auth.users(id) on delete set null,
+  email text not null unique,
+  display_name text not null,
+  photo_url text,
+  role public.app_user_role not null default 'Builder',
+  onboarded boolean not null default false,
+  storytelling_completed boolean not null default false,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now()),
+  last_login timestamptz not null default timezone('utc', now()),
+  settings jsonb not null default '{"theme":"dark","notifications":true}'::jsonb
+);
+
+create table if not exists public.roles (
+  id text primary key,
+  name text not null unique,
+  permissions text[] not null default '{}',
+  created_at timestamptz not null default timezone('utc', now())
+);
+
+create table if not exists public.projects (
+  id text primary key,
+  name text not null,
+  description text not null default '',
+  owner_id text not null references public.app_users(id) on delete restrict,
+  status text not null default 'Draft',
+  is_favorite boolean not null default false,
+  current_session_id text,
+  app_vision text,
+  prd text,
+  tech_arch text,
+  ux_strategy text,
+  members jsonb not null default '[]'::jsonb,
+  repositories jsonb not null default '[]'::jsonb,
+  integrity_status text,
+  last_modified_by jsonb,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
 create or replace function public.current_app_user_id()
 returns text
 language sql
@@ -78,48 +120,6 @@ as $$
   );
 $$;
 
-create table if not exists public.app_users (
-  id text primary key,
-  auth_user_id uuid unique references auth.users(id) on delete set null,
-  email text not null unique,
-  display_name text not null,
-  photo_url text,
-  role public.app_user_role not null default 'Builder',
-  onboarded boolean not null default false,
-  storytelling_completed boolean not null default false,
-  created_at timestamptz not null default timezone('utc', now()),
-  updated_at timestamptz not null default timezone('utc', now()),
-  last_login timestamptz not null default timezone('utc', now()),
-  settings jsonb not null default '{"theme":"dark","notifications":true}'::jsonb
-);
-
-create table if not exists public.roles (
-  id text primary key,
-  name text not null unique,
-  permissions text[] not null default '{}',
-  created_at timestamptz not null default timezone('utc', now())
-);
-
-create table if not exists public.projects (
-  id text primary key,
-  name text not null,
-  description text not null default '',
-  owner_id text not null references public.app_users(id) on delete restrict,
-  status text not null default 'Draft',
-  is_favorite boolean not null default false,
-  current_session_id text,
-  app_vision text,
-  prd text,
-  tech_arch text,
-  ux_strategy text,
-  members jsonb not null default '[]'::jsonb,
-  repositories jsonb not null default '[]'::jsonb,
-  integrity_status text,
-  last_modified_by jsonb,
-  created_at timestamptz not null default timezone('utc', now()),
-  updated_at timestamptz not null default timezone('utc', now())
-);
-
 create table if not exists public.sessions (
   id text primary key,
   project_id text not null references public.projects(id) on delete cascade,
@@ -178,6 +178,20 @@ create table if not exists public.project_versions (
   goal text not null default '',
   linked_feature_ids text[] not null default '{}',
   release_notes text,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+create table if not exists public.assets (
+  id text primary key,
+  project_id text not null references public.projects(id) on delete cascade,
+  name text not null,
+  type text not null,
+  url text not null,
+  tags text[] not null default '{}',
+  feature_ids text[] not null default '{}',
+  size integer,
+  mime_type text,
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
@@ -452,6 +466,7 @@ create table if not exists public.sync_states (
 create index if not exists idx_projects_owner_id on public.projects(owner_id);
 create index if not exists idx_features_project_id_updated_at on public.features(project_id, updated_at desc);
 create unique index if not exists idx_features_project_id_feature_code on public.features(project_id, feature_code);
+create index if not exists idx_assets_project_id_updated_at on public.assets(project_id, updated_at desc);
 create index if not exists idx_feature_comments_feature_id_created_at on public.feature_comments(feature_id, created_at asc);
 create index if not exists idx_versions_project_id on public.project_versions(project_id);
 create index if not exists idx_pages_project_id on public.ui_pages(project_id);
@@ -476,6 +491,8 @@ drop trigger if exists set_updated_at_feature_comments on public.feature_comment
 create trigger set_updated_at_feature_comments before update on public.feature_comments for each row execute function public.set_updated_at();
 drop trigger if exists set_updated_at_project_versions on public.project_versions;
 create trigger set_updated_at_project_versions before update on public.project_versions for each row execute function public.set_updated_at();
+drop trigger if exists set_updated_at_assets on public.assets;
+create trigger set_updated_at_assets before update on public.assets for each row execute function public.set_updated_at();
 drop trigger if exists set_updated_at_ui_layouts on public.ui_layouts;
 create trigger set_updated_at_ui_layouts before update on public.ui_layouts for each row execute function public.set_updated_at();
 drop trigger if exists set_updated_at_ui_pages on public.ui_pages;
@@ -519,6 +536,7 @@ alter table public.sessions enable row level security;
 alter table public.features enable row level security;
 alter table public.feature_comments enable row level security;
 alter table public.project_versions enable row level security;
+alter table public.assets enable row level security;
 alter table public.ui_layouts enable row level security;
 alter table public.ui_pages enable row level security;
 alter table public.ui_components enable row level security;
@@ -578,6 +596,8 @@ drop policy if exists feature_comments_all on public.feature_comments;
 create policy feature_comments_all on public.feature_comments for all to authenticated using (public.can_access_project(project_id)) with check (public.can_modify_project(project_id));
 drop policy if exists project_versions_all on public.project_versions;
 create policy project_versions_all on public.project_versions for all to authenticated using (public.can_access_project(project_id)) with check (public.can_modify_project(project_id));
+drop policy if exists assets_all on public.assets;
+create policy assets_all on public.assets for all to authenticated using (public.can_access_project(project_id)) with check (public.can_modify_project(project_id));
 drop policy if exists ui_layouts_all on public.ui_layouts;
 create policy ui_layouts_all on public.ui_layouts for all to authenticated using (public.can_access_project(project_id)) with check (public.can_modify_project(project_id));
 drop policy if exists ui_pages_all on public.ui_pages;
@@ -660,6 +680,7 @@ declare
 begin
   foreach target_table in array array[
     'app_users','roles','projects','sessions','features','feature_comments','project_versions',
+    'assets',
     'ui_layouts','ui_pages','ui_components','ui_style_systems','prd_sections','audit_findings',
     'readiness_checks','blockers','tasks','llm_functions','chat_messages','suggestions',
     'audit_logs','ai_task_logs','ai_models','prompt_templates','api_key_configs',

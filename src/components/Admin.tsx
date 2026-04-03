@@ -18,13 +18,14 @@ import {
   ListTodo,
   RefreshCw,
   Loader2,
-  Layout
+  Layout,
+  MessageSquareQuote
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { where, orderBy, limit } from '../lib/db/firestoreCompat';
-import { AIModelConfig, PromptTemplate, APIKeyConfig, UsageLog, ErrorLog, AuditLogEntry, Task, LLMFunction, PRDSection, AuditFinding, ReadinessCheck } from '../types';
+import { where, orderBy, limit } from '../lib/db/supabaseData';
+import { AIModelConfig, PromptTemplate, APIKeyConfig, UsageLog, ErrorLog, AuditLogEntry, Task, LLMFunction, PRDSection, AuditFinding, ReadinessCheck, FeedbackItem } from '../types';
 import { cn } from '../lib/utils';
-import { useFirestore } from '../hooks/useFirestore';
+import { useSupabaseCollection } from '../hooks/useSupabaseCollection';
 import { useProject } from '../context/ProjectContext';
 import { SyncService } from '../services/SyncService';
 import LLMFunctionsManagement from './LLMFunctionsManagement';
@@ -32,13 +33,17 @@ import FullPRD from './admin/FullPRD';
 import Tasklist from './admin/Tasklist';
 import IntegrityBadge from './IntegrityBadge';
 import SyncIndicator from './SyncIndicator';
+import { useToast } from './Toast';
 
-type AdminTab = 'overview' | 'prd' | 'tasklist' | 'audit' | 'readiness' | 'models' | 'prompts' | 'functions' | 'keys' | 'logs';
+type AdminTab = 'overview' | 'prd' | 'tasklist' | 'audit' | 'readiness' | 'feedback' | 'models' | 'prompts' | 'functions' | 'keys' | 'logs';
+type FeedbackFilter = FeedbackItem['status'] | 'all';
 
 export default function Admin() {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [feedbackFilter, setFeedbackFilter] = useState<FeedbackFilter>('all');
+  const { showToast } = useToast();
 
   const { 
     selectedProject, 
@@ -72,18 +77,22 @@ export default function Admin() {
     updateLLMFunction
   } = useProject();
 
-  const { data: models, update: updateModel } = useFirestore<AIModelConfig>('admin/ai/models');
-  const { data: prompts } = useFirestore<PromptTemplate>('admin/ai/prompts');
-  const { data: keys } = useFirestore<APIKeyConfig>('admin/ai/keys');
-  const { data: usageLogs } = useFirestore<UsageLog>(
+  const { data: models, update: updateModel } = useSupabaseCollection<AIModelConfig>('admin/ai/models');
+  const { data: prompts } = useSupabaseCollection<PromptTemplate>('admin/ai/prompts');
+  const { data: keys } = useSupabaseCollection<APIKeyConfig>('admin/ai/keys');
+  const { data: usageLogs } = useSupabaseCollection<UsageLog>(
     'admin/ai/usage', 
     [orderBy('timestamp', 'desc'), limit(50)]
   );
-  const { data: errorLogs } = useFirestore<ErrorLog>(
+  const { data: errorLogs } = useSupabaseCollection<ErrorLog>(
     'admin/ai/errors', 
     [orderBy('timestamp', 'desc'), limit(50)]
   );
-  const { data: functions } = useFirestore<LLMFunction>('admin/ai/functions');
+  const { data: functions } = useSupabaseCollection<LLMFunction>('admin/ai/functions');
+  const { data: feedbackItems, update: updateFeedback } = useSupabaseCollection<FeedbackItem>(
+    'feedback',
+    [orderBy('createdAt', 'desc'), limit(100)]
+  );
 
   // Automatically select FlowForge AI project if no project is selected
   useEffect(() => {
@@ -120,7 +129,7 @@ export default function Admin() {
       
       setTasks(newTasks);
 
-      // Update integrity status in Firestore
+      // Update integrity status in the database
       for (const page of updatedPages) {
         await updatePage(page.id, { integrityStatus: page.integrityStatus });
       }
@@ -252,6 +261,16 @@ export default function Admin() {
       await updateModel(modelId, { isEnabled: !currentStatus });
     } catch (error) {
       console.error('Error toggling model:', error);
+    }
+  };
+
+  const handleFeedbackStatusUpdate = async (item: FeedbackItem, status: FeedbackItem['status']) => {
+    try {
+      await updateFeedback(item.id, { status });
+      showToast(`Feedback marked as ${status}.`);
+    } catch (error) {
+      console.error('Feedback status update failed:', error);
+      showToast('Failed to update feedback status.', 'error');
     }
   };
 
@@ -528,9 +547,124 @@ export default function Admin() {
     </div>
   );
 
-  const { data: auditLogs } = useFirestore<AuditLogEntry>(
+  const { data: auditLogs } = useSupabaseCollection<AuditLogEntry>(
     'admin/audit/logs',
     [orderBy('timestamp', 'desc'), limit(100)]
+  );
+
+  const filteredFeedbackItems = feedbackItems.filter((item) => {
+    if (feedbackFilter === 'all') {
+      return true;
+    }
+
+    return item.status === feedbackFilter;
+  });
+
+  const renderFeedback = () => (
+    <div className="space-y-6">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div>
+          <h3 className="text-xl font-bold text-white">User Feedback Inbox</h3>
+          <p className="text-sm text-gray-500 mt-1">Review product feedback, link it to delivery, and keep status visible.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {(['all', 'new', 'reviewed', 'planned', 'resolved'] as FeedbackFilter[]).map((status) => (
+            <button
+              key={status}
+              onClick={() => setFeedbackFilter(status)}
+              className={cn(
+                'px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all border',
+                feedbackFilter === status
+                  ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg'
+                  : 'bg-white/5 border-white/5 text-gray-400 hover:text-gray-200 hover:bg-white/10'
+              )}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+        {[
+          { label: 'New', value: feedbackItems.filter((item) => item.status === 'new').length, tone: 'text-sky-400 bg-sky-500/10' },
+          { label: 'Planned', value: feedbackItems.filter((item) => item.status === 'planned').length, tone: 'text-amber-400 bg-amber-500/10' },
+          { label: 'Resolved', value: feedbackItems.filter((item) => item.status === 'resolved').length, tone: 'text-emerald-400 bg-emerald-500/10' },
+        ].map((metric) => (
+          <div key={metric.label} className="p-6 rounded-3xl bg-[#141414] border border-white/5 shadow-xl">
+            <div className={cn('w-12 h-12 rounded-2xl flex items-center justify-center mb-4', metric.tone)}>
+              <MessageSquareQuote size={20} />
+            </div>
+            <p className="text-gray-500 text-xs font-medium mb-1 uppercase tracking-widest">{metric.label}</p>
+            <p className="text-2xl font-bold text-white">{metric.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 gap-4">
+        {filteredFeedbackItems.map((item) => (
+          <article key={item.id} className="p-6 rounded-3xl bg-[#141414] border border-white/5 shadow-xl space-y-4">
+            <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-2 py-1 rounded-lg bg-white/5 border border-white/5 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                    {item.category}
+                  </span>
+                  <span className={cn(
+                    'px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border',
+                    item.status === 'new' ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' :
+                    item.status === 'reviewed' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' :
+                    item.status === 'planned' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                    'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                  )}>
+                    {item.status}
+                  </span>
+                </div>
+                <h4 className="text-white font-bold text-lg">{item.subject}</h4>
+                <p className="text-sm text-gray-400 leading-relaxed">{item.message}</p>
+              </div>
+              <div className="min-w-[220px] rounded-2xl bg-white/5 border border-white/5 p-4">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Reporter</p>
+                <p className="text-sm text-white font-medium">{item.userEmail}</p>
+                <p className="text-xs text-gray-500 mt-3">
+                  {item.createdAt ? new Date(item.createdAt).toLocaleString() : 'Pending...'}
+                </p>
+                {item.projectId && (
+                  <p className="text-xs text-indigo-400 mt-2">Linked project: {item.projectId}</p>
+                )}
+                {item.contextPath && (
+                  <p className="text-xs text-gray-500 mt-1 break-all">{item.contextPath}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {(['new', 'reviewed', 'planned', 'resolved'] as FeedbackItem['status'][]).map((status) => (
+                <button
+                  key={status}
+                  onClick={() => handleFeedbackStatusUpdate(item, status)}
+                  disabled={item.status === status}
+                  className={cn(
+                    'px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all border',
+                    item.status === status
+                      ? 'bg-white text-black border-white cursor-default'
+                      : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
+                  )}
+                >
+                  Mark {status}
+                </button>
+              ))}
+            </div>
+          </article>
+        ))}
+
+        {filteredFeedbackItems.length === 0 && (
+          <div className="p-12 rounded-3xl bg-[#141414] border border-white/5 border-dashed text-center text-gray-500 italic">
+            No feedback items match the current filter.
+          </div>
+        )}
+      </div>
+    </div>
   );
 
   const renderLogs = () => (
@@ -622,6 +756,7 @@ export default function Admin() {
             { id: 'tasklist', label: 'Tasklist', icon: ListTodo },
             { id: 'audit', label: 'Audit', icon: Shield },
             { id: 'readiness', label: 'Readiness', icon: CheckCircle2 },
+            { id: 'feedback', label: 'Feedback', icon: MessageSquareQuote },
             { id: 'models', label: 'Models', icon: Cpu },
             { id: 'prompts', label: 'Prompts', icon: FileCode },
             { id: 'functions', label: 'Functions', icon: Zap },
@@ -804,6 +939,8 @@ export default function Admin() {
           </div>
         )}
 
+        {activeTab === 'feedback' && renderFeedback()}
+
         {activeTab === 'models' && renderModels()}
         {activeTab === 'prompts' && renderPrompts()}
         {activeTab === 'functions' && <LLMFunctionsManagement />}
@@ -813,3 +950,5 @@ export default function Admin() {
     </div>
   );
 }
+
+

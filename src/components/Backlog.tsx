@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { FolderKanban, Search, ChevronRight, Clock, ArrowLeft, Plus, Loader2 } from 'lucide-react';
-import { where, orderBy } from '../lib/db/firestoreCompat';
+import { where, orderBy } from '../lib/db/supabaseData';
 import { Project, Feature } from '../types';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from './Toast';
-import { useFirestore } from '../hooks/useFirestore';
+import { useSupabaseCollection } from '../hooks/useSupabaseCollection';
 
 interface BacklogProps {
   project: Project;
@@ -20,7 +20,7 @@ export default function Backlog({ project, onSelectFeature }: BacklogProps) {
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [isAdding, setIsAdding] = useState(false);
 
-  const { data: features, add: addFeature } = useFirestore<Feature>(
+  const { data: features, add: addFeature } = useSupabaseCollection<Feature>(
     project.id ? `projects/${project.id}/features` : null,
     [where('archived', '==', false), orderBy('updatedAt', 'desc')]
   );
@@ -271,3 +271,5 @@ export default function Backlog({ project, onSelectFeature }: BacklogProps) {
     </div>
   );
 }
+
+

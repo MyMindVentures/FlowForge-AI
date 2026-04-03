@@ -4,6 +4,17 @@ import { MemoryRouter } from 'react-router-dom';
 import AssetManager from './AssetManager';
 import { ToastProvider } from './Toast';
 
+vi.mock('../hooks/useSupabaseCollection', () => ({
+  useSupabaseCollection: () => ({
+    data: [],
+    loading: false,
+    error: null,
+    add: vi.fn(),
+    update: vi.fn(),
+    remove: vi.fn(),
+  }),
+}));
+
 const mockProject = {
   id: '1',
   name: 'Test Project',
@@ -44,3 +55,5 @@ describe('AssetManager', () => {
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 });
+
+

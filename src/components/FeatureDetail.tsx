@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Edit2, Clock, MessageSquare, Bot, X, Save, Loader2, Sparkles, Lock, Unlock, Terminal, FileText, Layout as LayoutIcon, History, Image as ImageIcon } from 'lucide-react';
-import { doc, updateDoc, orderBy, where, limit } from '../lib/db/firestoreCompat';
-import { db } from '../firebase';
+import { doc, updateDoc, orderBy, where, limit } from '../lib/db/supabaseData';
+import { db } from '../lib/supabase/appClient';
 import { Project, Feature, Comment } from '../types';
 import { formatDistanceToNow } from 'date-fns';
 import { cn, resizeBase64Image } from '../lib/utils';
 import { useToast } from './Toast';
 import ConfirmModal from './ConfirmModal';
-import { useFirestore } from '../hooks/useFirestore';
-import { handleFirestoreError, OperationType } from '../lib/firestoreErrorHandler';
+import { useSupabaseCollection } from '../hooks/useSupabaseCollection';
+import { handleDataOperationError, DataOperationType } from '../lib/databaseErrorHandler';
 import { AgentOrchestrator, AgentTaskType } from '../services/ai/orchestrator';
 import { AuditService, AuditAction } from '../services/audit';
 
@@ -22,6 +22,7 @@ import FeatureBuilderBrief from './feature/FeatureBuilderBrief';
 import FeaturePrompts from './feature/FeaturePrompts';
 
 import { useProject } from '../context/ProjectContext';
+import { useAuth } from '../context/AuthContext';
 
 interface FeatureDetailProps {
   project: Project;
@@ -35,7 +36,10 @@ type TabType = 'overview' | 'concept' | 'builder' | 'prompts' | 'discussion' | '
 export default function FeatureDetail({ project, feature, onBack, onOpenChat }: FeatureDetailProps) {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const { pages, components, layouts } = useProject();
+  const { user, profile } = useAuth();
   const [newComment, setNewComment] = useState('');
+  const [commentSummary, setCommentSummary] = useState('');
+  const [commentFilter, setCommentFilter] = useState<'all' | 'open' | 'resolved'>('all');
   const [commentRole, setCommentRole] = useState<'Architect' | 'Builder'>('Architect');
   const [commentType, setCommentType] = useState<'Question' | 'Decision' | 'Definition'>('Question');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -47,12 +51,12 @@ export default function FeatureDetail({ project, feature, onBack, onOpenChat }: 
 
   const { showToast } = useToast();
 
-  const { data: comments, add: addComment } = useFirestore<Comment>(
+  const { data: comments, add: addComment, update: updateComment } = useSupabaseCollection<Comment>(
     project.id && feature.id ? `projects/${project.id}/features/${feature.id}/comments` : null,
     [orderBy('createdAt', 'asc')]
   );
 
-  const { data: auditLogs } = useFirestore<any>(
+  const { data: auditLogs } = useSupabaseCollection<any>(
     project.id && feature.id ? `projects/${project.id}/audit_logs` : null,
     [where('featureId', '==', feature.id), orderBy('timestamp', 'desc'), limit(50)]
   );
@@ -72,7 +76,7 @@ export default function FeatureDetail({ project, feature, onBack, onOpenChat }: 
       await updateDoc(featureRef, {
         status: newStatus,
         updatedAt: new Date().toISOString(),
-      }).catch(e => handleFirestoreError(e, OperationType.UPDATE, `projects/${project.id}/features/${feature.id}`));
+      }).catch(e => handleDataOperationError(e, DataOperationType.UPDATE, `projects/${project.id}/features/${feature.id}`));
       
       await AuditService.log(AuditAction.FEATURE_UPDATED, { 
         field: 'status', 
@@ -96,7 +100,7 @@ export default function FeatureDetail({ project, feature, onBack, onOpenChat }: 
       await updateDoc(featureRef, {
         isLocked: !feature.isLocked,
         updatedAt: new Date().toISOString(),
-      }).catch(e => handleFirestoreError(e, OperationType.UPDATE, `projects/${project.id}/features/${feature.id}`));
+      }).catch(e => handleDataOperationError(e, DataOperationType.UPDATE, `projects/${project.id}/features/${feature.id}`));
       
       await AuditService.log(
         feature.isLocked ? AuditAction.FEATURE_UNLOCKED : AuditAction.FEATURE_LOCKED,
@@ -117,7 +121,7 @@ export default function FeatureDetail({ project, feature, onBack, onOpenChat }: 
       await updateDoc(featureRef, {
         archived: true,
         updatedAt: new Date().toISOString(),
-      }).catch(e => handleFirestoreError(e, OperationType.UPDATE, `projects/${project.id}/features/${feature.id}`));
+      }).catch(e => handleDataOperationError(e, DataOperationType.UPDATE, `projects/${project.id}/features/${feature.id}`));
       
       await AuditService.log(AuditAction.FEATURE_ARCHIVED, { featureTitle: feature.title }, project.id, feature.id);
 
@@ -141,12 +145,26 @@ export default function FeatureDetail({ project, feature, onBack, onOpenChat }: 
         why: editedFeature.why,
         nonTechnicalDescription: editedFeature.nonTechnicalDescription,
         technicalDescription: editedFeature.technicalDescription,
+        category: editedFeature.category,
+        epic: editedFeature.epic,
+        release: editedFeature.release,
+        persona: editedFeature.persona,
+        jobsToBeDone: editedFeature.jobsToBeDone,
+        acceptanceCriteria: editedFeature.acceptanceCriteria,
+        successMetrics: editedFeature.successMetrics,
+        nonFunctionalRequirements: editedFeature.nonFunctionalRequirements,
+        dependencies: editedFeature.dependencies,
+        assumptions: editedFeature.assumptions,
+        risks: editedFeature.risks,
+        notes: editedFeature.notes,
+        figmaLink: editedFeature.figmaLink,
+        specLink: editedFeature.specLink,
         conceptThinker: editedFeature.conceptThinker,
         builderBrief: editedFeature.builderBrief,
         codingPrompt: editedFeature.codingPrompt,
         uiDesignPrompt: editedFeature.uiDesignPrompt,
         updatedAt: new Date().toISOString(),
-      }).catch(e => handleFirestoreError(e, OperationType.UPDATE, `projects/${project.id}/features/${feature.id}`));
+      }).catch(e => handleDataOperationError(e, DataOperationType.UPDATE, `projects/${project.id}/features/${feature.id}`));
       
       await AuditService.log(AuditAction.FEATURE_UPDATED, { 
         type: 'MANUAL_EDIT',
@@ -175,7 +193,7 @@ export default function FeatureDetail({ project, feature, onBack, onOpenChat }: 
       await updateDoc(featureRef, {
         [field]: result,
         updatedAt: new Date().toISOString(),
-      }).catch(e => handleFirestoreError(e, OperationType.UPDATE, `projects/${project.id}/features/${feature.id}`));
+      }).catch(e => handleDataOperationError(e, DataOperationType.UPDATE, `projects/${project.id}/features/${feature.id}`));
       
       await AuditService.log(AuditAction.AI_GENERATION, { 
         task, 
@@ -214,7 +232,7 @@ export default function FeatureDetail({ project, feature, onBack, onOpenChat }: 
           visualUrl: resizedUrl,
           visualPrompt,
           updatedAt: new Date().toISOString(),
-        }).catch(e => handleFirestoreError(e, OperationType.UPDATE, `projects/${project.id}/features/${feature.id}`));
+        }).catch(e => handleDataOperationError(e, DataOperationType.UPDATE, `projects/${project.id}/features/${feature.id}`));
       }
       
       await AuditService.log(AuditAction.AI_GENERATION, { 
@@ -249,7 +267,7 @@ export default function FeatureDetail({ project, feature, onBack, onOpenChat }: 
       await updateDoc(featureRef, {
         uiImpact: result,
         updatedAt: new Date().toISOString(),
-      }).catch(e => handleFirestoreError(e, OperationType.UPDATE, `projects/${project.id}/features/${feature.id}`));
+      }).catch(e => handleDataOperationError(e, DataOperationType.UPDATE, `projects/${project.id}/features/${feature.id}`));
       
       await AuditService.log(AuditAction.AI_GENERATION, { 
         task: 'ANALYZE_UI_IMPACT', 
@@ -271,7 +289,7 @@ export default function FeatureDetail({ project, feature, onBack, onOpenChat }: 
       await updateDoc(featureRef, {
         ...updates,
         updatedAt: new Date().toISOString(),
-      }).catch(e => handleFirestoreError(e, OperationType.UPDATE, `projects/${project.id}/features/${feature.id}`));
+      }).catch(e => handleDataOperationError(e, DataOperationType.UPDATE, `projects/${project.id}/features/${feature.id}`));
       
       await AuditService.log(AuditAction.FEATURE_UPDATED, { 
         featureTitle: feature.title,
@@ -288,17 +306,46 @@ export default function FeatureDetail({ project, feature, onBack, onOpenChat }: 
     if (!newComment.trim()) return;
 
     try {
+      const authorName = profile?.displayName || user?.displayName || commentRole;
+
       await addComment({
         featureId: feature.id,
         authorRole: commentRole,
+        authorName,
+        summary: commentSummary.trim() || `${commentType}: ${newComment.trim().slice(0, 72)}`,
         content: newComment.trim(),
         type: commentType,
+        status: 'open',
         createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       });
       setNewComment('');
+      setCommentSummary('');
     } catch (error) {
       console.error('Error adding comment:', error);
       showToast('Failed to add comment', 'error');
+    }
+  };
+
+  const handleUpdateCommentStatus = async (commentId: string, status: 'open' | 'resolved') => {
+    try {
+      await updateComment(commentId, {
+        status,
+        resolvedAt: status === 'resolved' ? new Date().toISOString() : null,
+        updatedAt: new Date().toISOString(),
+      } as Partial<Comment>);
+
+      await AuditService.log(AuditAction.FEATURE_UPDATED, {
+        type: 'COMMENT_STATUS',
+        featureTitle: feature.title,
+        commentId,
+        status,
+      }, project.id, feature.id);
+
+      showToast(status === 'resolved' ? 'Comment resolved' : 'Comment reopened');
+    } catch (error) {
+      console.error('Error updating comment status:', error);
+      showToast('Failed to update comment status', 'error');
     }
   };
 
@@ -483,11 +530,16 @@ export default function FeatureDetail({ project, feature, onBack, onOpenChat }: 
             comments={comments}
             newComment={newComment}
             setNewComment={setNewComment}
+            commentSummary={commentSummary}
+            setCommentSummary={setCommentSummary}
+            commentFilter={commentFilter}
+            setCommentFilter={setCommentFilter}
             commentRole={commentRole}
             setCommentRole={setCommentRole}
             commentType={commentType}
             setCommentType={setCommentType}
             onAddComment={handleAddComment}
+            onUpdateCommentStatus={handleUpdateCommentStatus}
           />
         )}
 
@@ -522,3 +574,5 @@ export default function FeatureDetail({ project, feature, onBack, onOpenChat }: 
     </div>
   );
 }
+
+

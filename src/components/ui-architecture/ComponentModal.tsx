@@ -126,3 +126,5 @@ export default function ComponentModal({ isOpen, onClose, onSave, initialData }:
     </div>
   );
 }
+
+

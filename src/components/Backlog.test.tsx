@@ -4,6 +4,15 @@ import { MemoryRouter } from 'react-router-dom';
 import Backlog from './Backlog';
 import { ToastProvider } from './Toast';
 
+vi.mock('../hooks/useSupabaseCollection', () => ({
+  useSupabaseCollection: () => ({
+    data: [],
+    loading: false,
+    error: null,
+    add: vi.fn(),
+  }),
+}));
+
 const mockProject = {
   id: '1',
   name: 'Test Project',
@@ -29,3 +38,5 @@ describe('Backlog', () => {
     expect(screen.getByText('Feature Backlog')).toBeInTheDocument();
   });
 });
+
+

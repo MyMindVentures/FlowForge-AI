@@ -600,7 +600,7 @@ export class SyncService {
         solution: 'A bi-directional sync system that reflects codebase changes in the project data.',
         why: 'Ensures the "FlowForge AI" project is always a perfect example.',
         nonTechnicalDescription: 'Keeps the app data in sync with the actual code.',
-        technicalDescription: 'Heuristic-based scanner that maps files to UI pages and components in Firestore.',
+        technicalDescription: 'Heuristic-based scanner that maps files to UI pages and components in Supabase-backed project data.',
         archived: false,
         createdAt: now,
         updatedAt: now,
@@ -632,7 +632,7 @@ export class SyncService {
         solution: 'A centralized dashboard for model routing, prompt management, and audit logs.',
         why: 'Essential for platform maintainability.',
         nonTechnicalDescription: 'A dashboard for the app owner to manage AI settings.',
-        technicalDescription: 'Admin-only section with Firestore-backed configuration for LLM functions.',
+        technicalDescription: 'Admin-only section with database-backed configuration for LLM functions.',
         archived: false,
         createdAt: now,
         updatedAt: now,
@@ -661,10 +661,10 @@ export class SyncService {
         status: 'Completed',
         priority: 'Critical',
         problem: 'Ensuring the database accurately reflects the codebase is a manual, error-prone task.',
-        solution: 'An automated synchronization service that audits the codebase and updates Firestore.',
+        solution: 'An automated synchronization service that audits the codebase and updates the persisted project model.',
         why: 'Maintains the integrity of the FlowForge AI project as a living example.',
         nonTechnicalDescription: 'Automatically keeps the app\'s data in sync with its code.',
-        technicalDescription: 'Service-based heuristic scanner that maps a maintained codebase manifest to UI pages and components in Firestore.',
+        technicalDescription: 'Service-based heuristic scanner that maps a maintained codebase manifest to UI pages and components in the project database.',
         archived: false,
         createdAt: now,
         updatedAt: now,
@@ -687,7 +687,7 @@ export class SyncService {
       {
         projectId,
         title: 'Core Architecture',
-        content: 'The platform uses a multi-agent AI system integrated with a real-time bi-directional sync engine between the codebase and Firestore.',
+        content: 'The platform uses a multi-agent AI system integrated with a real-time sync engine between the codebase and Supabase.',
         order: 2,
         linkedFeatureIds: ['CORE-001', 'CORE-002'],
         status: 'Finalized',
@@ -711,7 +711,7 @@ export class SyncService {
     const auditFindings: Omit<AuditFinding, 'id'>[] = [
       {
         projectId,
-        title: 'Firestore Document Size Optimization',
+        title: 'Generated Asset Size Optimization',
         description: 'Large base64 images were causing document size errors. Implementation of resizing utility is required.',
         severity: 'High',
         category: 'Performance',
@@ -744,7 +744,7 @@ export class SyncService {
       },
       {
         projectId,
-        title: 'Firestore Path Normalization',
+        title: 'Database Path Normalization',
         description: 'AI functions were using an invalid path (even number of segments). Corrected to odd-numbered path.',
         severity: 'High',
         category: 'Logic',
@@ -760,7 +760,7 @@ export class SyncService {
         projectId,
         category: 'Security',
         label: 'RBAC Enforcement',
-        description: 'Verify that all Firestore collections are protected by appropriate security rules.',
+        description: 'Verify that all project tables are protected by appropriate access rules.',
         isPassed: true,
         updatedAt: now,
         integrityStatus: 'verified'
@@ -768,8 +768,8 @@ export class SyncService {
       {
         projectId,
         category: 'Infrastructure',
-        label: 'Firebase Configuration',
-        description: 'Ensure all environment variables and Firebase project settings are correctly initialized.',
+        label: 'Supabase Configuration',
+        description: 'Ensure all environment variables and Supabase project settings are correctly initialized.',
         isPassed: true,
         updatedAt: now,
         integrityStatus: 'verified'
@@ -795,8 +795,8 @@ export class SyncService {
       {
         projectId,
         category: 'Performance',
-        label: 'Firestore Query Optimization',
-        description: 'Verify that all Firestore queries are indexed and efficient.',
+        label: 'Database Query Optimization',
+        description: 'Verify that database queries are indexed and efficient.',
         isPassed: true,
         updatedAt: now,
         integrityStatus: 'verified'
@@ -826,8 +826,8 @@ export class SyncService {
       },
       {
         projectId,
-        title: 'Refactor: Firestore Error Handling',
-        description: 'Centralize Firestore error handling with a reusable utility.',
+        title: 'Refactor: Database Error Handling',
+        description: 'Centralize database error handling with a reusable utility.',
         status: 'implemented',
         priority: 'Medium',
         relatedEntityType: 'layout',
@@ -945,8 +945,8 @@ export class SyncService {
       projectId,
       category: 'Security',
       label: 'RBAC Enforcement',
-      description: 'Verify that all Firestore collections are protected by appropriate security rules.',
-      isPassed: true, // We assume this is true based on our manual audit of firestore.rules
+      description: 'Verify that all project tables are protected by appropriate access rules.',
+      isPassed: true, // We assume this is true based on the current database policy setup.
       updatedAt: now,
       integrityStatus: 'verified'
     };
@@ -1034,7 +1034,7 @@ export class SyncService {
     const codebaseManifest = [
       'src/App.tsx',
       'src/main.tsx',
-      'src/firebase.ts',
+      'src/lib/supabase/appClient.ts',
       'src/types.ts',
       'src/index.css',
       
@@ -1101,12 +1101,14 @@ export class SyncService {
       // Context & Hooks
       'src/context/AuthContext.tsx',
       'src/context/ProjectContext.tsx',
-      'src/hooks/useFirestore.ts',
+      'src/hooks/useSupabaseCollection.ts',
       
       // Lib
       'src/lib/utils.ts',
-      'src/lib/firestoreErrorHandler.ts'
+      'src/lib/databaseErrorHandler.ts'
     ];
     return codebaseManifest.includes(path);
   }
 }
+
+

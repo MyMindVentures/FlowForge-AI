@@ -19,7 +19,7 @@ import { generateAssetTags } from '../services/geminiService';
 import { useToast } from './Toast';
 import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
-import { useFirestore } from '../hooks/useFirestore';
+import { useSupabaseCollection } from '../hooks/useSupabaseCollection';
 
 interface AssetManagerProps {
   project: Project;
@@ -41,7 +41,7 @@ export default function AssetManager({ project, features, onBack }: AssetManager
   });
   const { showToast } = useToast();
 
-  const { data: assets, loading, add: addAsset, remove: removeAsset } = useFirestore<Asset>(
+  const { data: assets, loading, add: addAsset, remove: removeAsset } = useSupabaseCollection<Asset>(
     project.id ? `projects/${project.id}/assets` : null
   );
 
@@ -407,3 +407,5 @@ export default function AssetManager({ project, features, onBack }: AssetManager
     </div>
   );
 }
+
+

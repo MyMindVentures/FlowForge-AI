@@ -14,18 +14,34 @@ vi.mock('motion/react', () => ({
 }));
 
 describe('Layout', () => {
+  const createAuthContextValue = (): ReturnType<typeof AuthContext.useAuth> => ({
+    user: { uid: 'user1', email: 'test@test.com', role: 'Architect' } as any,
+    profile: { role: 'Architect', onboarded: true } as any,
+    loading: false,
+    authError: null,
+    authNotice: null,
+    availableProviders: [],
+    defaultLoginProfiles: [],
+    login: vi.fn(),
+    loginWithPassword: vi.fn(),
+    loginWithProvider: vi.fn(),
+    loginWithEnterpriseSso: vi.fn(),
+    requestMagicLink: vi.fn(),
+    requestOneTimeCode: vi.fn(),
+    verifyOneTimeCode: vi.fn(),
+    requestPasswordReset: vi.fn(),
+    logout: vi.fn(),
+    logoutAllSessions: vi.fn(),
+    updateProfile: vi.fn(),
+    setRole: vi.fn(),
+  });
+
   it('renders sidebar and children', () => {
     const mockLogout = vi.fn();
-    
+
     vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
-      user: { uid: 'user1', email: 'test@test.com', role: 'Architect' } as any,
-      profile: { role: 'Architect', onboarded: true } as any,
-      loading: false,
-      authError: null,
-      login: vi.fn(),
+      ...createAuthContextValue(),
       logout: mockLogout,
-      updateProfile: vi.fn(),
-      setRole: vi.fn()
     });
 
     vi.spyOn(ProjectContext, 'useProject').mockReturnValue({
@@ -72,16 +88,10 @@ describe('Layout', () => {
 
   it('calls onLogout when logout button is clicked', () => {
     const mockLogout = vi.fn();
-    
+
     vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
-      user: { uid: 'user1', email: 'test@test.com', role: 'Architect' } as any,
-      profile: { role: 'Architect', onboarded: true } as any,
-      loading: false,
-      authError: null,
-      login: vi.fn(),
+      ...createAuthContextValue(),
       logout: mockLogout,
-      updateProfile: vi.fn(),
-      setRole: vi.fn()
     });
 
     vi.spyOn(ProjectContext, 'useProject').mockReturnValue({
@@ -126,3 +136,5 @@ describe('Layout', () => {
     expect(mockLogout).toHaveBeenCalled();
   });
 });
+
+

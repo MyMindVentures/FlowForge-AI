@@ -24,6 +24,9 @@ import Splash from './components/Splash';
 import Auth from './components/Auth';
 import Storytelling from './components/Storytelling';
 import ErrorBoundary from './components/ErrorBoundary';
+import FeedbackPanel from './components/FeedbackPanel';
+import AuthSessionPanel from './components/AuthSessionPanel';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { ToastProvider } from './components/Toast';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
@@ -270,7 +273,26 @@ function LoadingScreen() {
 // --- Main App Routes ---
 
 function AppRoutes() {
-  const { user, profile, login, logout, setRole, updateProfile, loading, authError } = useAuth();
+  const {
+    user,
+    profile,
+    login,
+    loginWithPassword,
+    loginWithProvider,
+    loginWithEnterpriseSso,
+    logout,
+    requestMagicLink,
+    requestOneTimeCode,
+    requestPasswordReset,
+    setRole,
+    updateProfile,
+    verifyOneTimeCode,
+    loading,
+    authError,
+    authNotice,
+    availableProviders,
+    defaultLoginProfiles,
+  } = useAuth();
   const { selectedProject, setSelectedProject, updateProject, features, versions, syncStatus } = useProject();
   const [showSplash, setShowSplash] = useState(true);
   const navigate = useNavigate();
@@ -284,13 +306,29 @@ function AppRoutes() {
   }
 
   if (!user) {
-    return <Auth onLogin={login} error={authError} />;
+    return (
+      <Auth
+        onLogin={login}
+        onPasswordLogin={loginWithPassword}
+        onProviderLogin={loginWithProvider}
+        onEnterpriseSsoLogin={loginWithEnterpriseSso}
+        onMagicLinkLogin={requestMagicLink}
+        onOneTimeCodeRequest={requestOneTimeCode}
+        onOneTimeCodeVerify={verifyOneTimeCode}
+        onPasswordResetRequest={requestPasswordReset}
+        providers={availableProviders}
+        defaultUsers={defaultLoginProfiles}
+        error={authError}
+        notice={authNotice}
+      />
+    );
   }
 
   const isAdmin = profile?.role === 'Admin' || profile?.email === 'lacometta33@gmail.com';
 
   return (
     <ErrorBoundary>
+      <PWAInstallPrompt />
       <AnimatePresence mode="wait">
         <Routes>
           {/* Storytelling Flow */}
@@ -340,41 +378,52 @@ function AppRoutes() {
 
 function SettingsView() {
   const { user, profile } = useAuth();
+  const { selectedProject } = useProject();
   const navigate = useNavigate();
   if (!user || !profile) return null;
 
   return (
-    <div className="p-4 lg:p-12 max-w-2xl mx-auto text-center">
+    <div className="p-4 lg:p-12 max-w-5xl mx-auto text-center">
       <h2 className="text-2xl lg:text-3xl font-bold text-white mb-6">Settings</h2>
-      <div className="p-6 lg:p-8 rounded-2xl lg:rounded-3xl bg-[#141414] border border-white/5 text-left">
-        <div className="flex flex-col sm:flex-row items-center gap-4 mb-8">
-          <img src={user.photoURL || ''} alt={user.displayName || ''} className="w-16 h-16 rounded-full border-2 border-indigo-500/20" />
-          <div className="text-center sm:text-left">
-            <p className="text-xl font-bold text-white">{user.displayName}</p>
-            <p className="text-gray-500">{user.email}</p>
-            <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 bg-indigo-500/10 text-indigo-400 rounded-lg text-[10px] font-bold uppercase tracking-widest">
-              <Sparkles size={10} />
-              {profile.role}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] text-left">
+        <div className="p-6 lg:p-8 rounded-2xl lg:rounded-3xl bg-[#141414] border border-white/5">
+          <div className="flex flex-col sm:flex-row items-center gap-4 mb-8">
+            <img src={user.photoURL || ''} alt={user.displayName || ''} className="w-16 h-16 rounded-full border-2 border-indigo-500/20" />
+            <div className="text-center sm:text-left">
+              <p className="text-xl font-bold text-white">{user.displayName}</p>
+              <p className="text-gray-500">{user.email}</p>
+              <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 bg-indigo-500/10 text-indigo-400 rounded-lg text-[10px] font-bold uppercase tracking-widest">
+                <Sparkles size={10} />
+                {profile.role}
+              </div>
             </div>
           </div>
-        </div>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
-            <span className="text-gray-300 font-medium text-sm lg:text-base">AI Model</span>
-            <span className="text-indigo-400 font-bold text-sm lg:text-base">Gemini 3 Flash</span>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
+              <span className="text-gray-300 font-medium text-sm lg:text-base">AI Model</span>
+              <span className="text-indigo-400 font-bold text-sm lg:text-base">Gemini 3 Flash</span>
+            </div>
+            <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
+              <span className="text-gray-300 font-medium text-sm lg:text-base">Theme</span>
+              <span className="text-gray-500 font-bold text-sm lg:text-base">Premium Dark</span>
+            </div>
+            <button 
+              onClick={() => navigate('/role-selection')}
+              className="w-full mt-4 p-4 rounded-xl bg-white/5 border border-white/5 text-gray-400 hover:text-white hover:border-white/10 transition-all text-sm font-medium flex items-center justify-between"
+            >
+              Change Role
+              <Sparkles size={16} className="text-indigo-400" />
+            </button>
           </div>
-          <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
-            <span className="text-gray-300 font-medium text-sm lg:text-base">Theme</span>
-            <span className="text-gray-500 font-bold text-sm lg:text-base">Premium Dark</span>
-          </div>
-          <button 
-            onClick={() => navigate('/role-selection')}
-            className="w-full mt-4 p-4 rounded-xl bg-white/5 border border-white/5 text-gray-400 hover:text-white hover:border-white/10 transition-all text-sm font-medium flex items-center justify-between"
-          >
-            Change Role
-            <Sparkles size={16} className="text-indigo-400" />
-          </button>
         </div>
+        <FeedbackPanel
+          userId={profile.uid}
+          userEmail={profile.email}
+          currentProject={selectedProject ? { id: selectedProject.id, name: selectedProject.name } : undefined}
+        />
+      </div>
+      <div className="mt-6 text-left">
+        <AuthSessionPanel />
       </div>
     </div>
   );

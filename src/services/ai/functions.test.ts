@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AIFunctions, LLMModelRouter } from './functions';
 
 // Mock Firebase
-vi.mock('../../firebase', () => ({
+vi.mock('../../lib/supabase/appClient', () => ({
   db: {},
   auth: {
     currentUser: { uid: 'test-user-id' }
@@ -10,7 +10,7 @@ vi.mock('../../firebase', () => ({
   supabase: {}
 }));
 
-vi.mock('../../lib/db/firestoreCompat', () => ({
+vi.mock('../../lib/db/supabaseData', () => ({
   doc: vi.fn(),
   getDoc: vi.fn().mockResolvedValue({
     exists: () => false,
@@ -126,3 +126,5 @@ describe('LLMModelRouter', () => {
     expect(LLMModelRouter.getModel('creative')).toBe('gemini-3-flash-preview');
   });
 });
+
+

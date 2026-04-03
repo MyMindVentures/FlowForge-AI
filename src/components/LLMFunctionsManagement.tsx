@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LLMFunction, AIModelConfig, PromptTemplate } from '../types';
-import { useFirestore } from '../hooks/useFirestore';
+import { useSupabaseCollection } from '../hooks/useSupabaseCollection';
 import { cn } from '../lib/utils';
 import { useToast } from './Toast';
 import { AIFunctions } from '../services/ai/functions';
@@ -28,9 +28,9 @@ interface LLMFunctionsManagementProps {
 }
 
 export default function LLMFunctionsManagement({ onBack }: LLMFunctionsManagementProps) {
-  const { data: functions, loading, error, add, update, remove } = useFirestore<LLMFunction>('admin/ai/functions');
-  const { data: models } = useFirestore<AIModelConfig>('admin/ai/models');
-  const { data: prompts } = useFirestore<PromptTemplate>('admin/ai/prompts');
+  const { data: functions, loading, error, add, update, remove } = useSupabaseCollection<LLMFunction>('admin/ai/functions');
+  const { data: models } = useSupabaseCollection<AIModelConfig>('admin/ai/models');
+  const { data: prompts } = useSupabaseCollection<PromptTemplate>('admin/ai/prompts');
   
   const [editingFunction, setEditingFunction] = useState<LLMFunction | null>(null);
   const [testingFunction, setTestingFunction] = useState<LLMFunction | null>(null);
@@ -570,3 +570,5 @@ export default function LLMFunctionsManagement({ onBack }: LLMFunctionsManagemen
     </div>
   );
 }
+
+

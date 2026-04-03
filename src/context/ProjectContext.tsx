@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { Project, Feature, Version, UIPage, UIComponent, UILayout, UIStyleSystem, PRDSection, AuditFinding, ReadinessCheck, Blocker, Task, LLMFunction } from '../types';
-import { useFirestore } from '../hooks/useFirestore';
+import { useSupabaseCollection } from '../hooks/useSupabaseCollection';
 import { useAuth } from './AuthContext';
-import { where } from '../lib/db/firestoreCompat';
+import { where } from '../lib/db/supabaseData';
 import { SyncService } from '../services/SyncService';
 
 interface ProjectContextType {
@@ -61,7 +61,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     return localStorage.getItem('selected_project_id');
   });
 
-  const { data: projects, loading: projectsLoading, add: addProjectDoc, update: updateProjectDoc, set: setProjectDoc } = useFirestore<Project>(
+  const { data: projects, loading: projectsLoading, add: addProjectDoc, update: updateProjectDoc, set: setProjectDoc } = useSupabaseCollection<Project>(
     user ? 'projects' : null, 
     user ? (isAdmin ? [] : [where('ownerId', '==', user.uid)]) : []
   );
@@ -136,7 +136,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const { data: features, loading: featuresLoading, syncStatus: featuresSync, add: addFeatureDoc, update: updateFeatureDoc, set: setFeatureDoc } = useFirestore<Feature>(
+  const { data: features, loading: featuresLoading, syncStatus: featuresSync, add: addFeatureDoc, update: updateFeatureDoc, set: setFeatureDoc } = useSupabaseCollection<Feature>(
     (user && selectedProjectId) ? `projects/${selectedProjectId}/features` : null, 
     []
   );
@@ -148,57 +148,57 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     add: addVersionDoc,
     update: updateVersionDoc,
     remove: removeVersionDoc
-  } = useFirestore<Version>(
+  } = useSupabaseCollection<Version>(
     (user && selectedProjectId) ? `projects/${selectedProjectId}/versions` : null, 
     []
   );
 
-  const { data: pages, loading: pagesLoading, add: addPageDoc, update: updatePageDoc, set: setPageDoc } = useFirestore<UIPage>(
+  const { data: pages, loading: pagesLoading, add: addPageDoc, update: updatePageDoc, set: setPageDoc } = useSupabaseCollection<UIPage>(
     (user && selectedProjectId) ? `projects/${selectedProjectId}/ui_pages` : null, 
     []
   );
 
-  const { data: components, loading: componentsLoading, add: addComponentDoc, update: updateComponentDoc, set: setComponentDoc } = useFirestore<UIComponent>(
+  const { data: components, loading: componentsLoading, add: addComponentDoc, update: updateComponentDoc, set: setComponentDoc } = useSupabaseCollection<UIComponent>(
     (user && selectedProjectId) ? `projects/${selectedProjectId}/ui_components` : null, 
     []
   );
 
-  const { data: layouts, loading: layoutsLoading, add: addLayoutDoc, update: updateLayoutDoc, set: setLayoutDoc } = useFirestore<UILayout>(
+  const { data: layouts, loading: layoutsLoading, add: addLayoutDoc, update: updateLayoutDoc, set: setLayoutDoc } = useSupabaseCollection<UILayout>(
     (user && selectedProjectId) ? `projects/${selectedProjectId}/ui_layouts` : null, 
     []
   );
 
-  const { data: styleSystemDocs, loading: styleSystemLoading, add: addStyleSystemDoc, update: updateStyleSystemDoc } = useFirestore<UIStyleSystem>(
+  const { data: styleSystemDocs, loading: styleSystemLoading, add: addStyleSystemDoc, update: updateStyleSystemDoc } = useSupabaseCollection<UIStyleSystem>(
     (user && selectedProjectId) ? `projects/${selectedProjectId}/ui_style` : null, 
     []
   );
 
-  const { data: prdSections, add: addPRDSectionDoc, update: updatePRDSectionDoc, set: setPRDSectionDoc } = useFirestore<PRDSection>(
+  const { data: prdSections, add: addPRDSectionDoc, update: updatePRDSectionDoc, set: setPRDSectionDoc } = useSupabaseCollection<PRDSection>(
     (user && selectedProjectId) ? `projects/${selectedProjectId}/prd_sections` : null, 
     []
   );
 
-  const { data: auditFindings, add: addAuditFindingDoc, update: updateAuditFindingDoc, set: setAuditFindingDoc } = useFirestore<AuditFinding>(
+  const { data: auditFindings, add: addAuditFindingDoc, update: updateAuditFindingDoc, set: setAuditFindingDoc } = useSupabaseCollection<AuditFinding>(
     (user && selectedProjectId) ? `projects/${selectedProjectId}/audit_findings` : null, 
     []
   );
 
-  const { data: readinessChecks, add: addReadinessCheckDoc, update: updateReadinessCheckDoc, set: setReadinessCheckDoc } = useFirestore<ReadinessCheck>(
+  const { data: readinessChecks, add: addReadinessCheckDoc, update: updateReadinessCheckDoc, set: setReadinessCheckDoc } = useSupabaseCollection<ReadinessCheck>(
     (user && selectedProjectId) ? `projects/${selectedProjectId}/readiness_checks` : null, 
     []
   );
 
-  const { data: blockers, add: addBlockerDoc, update: updateBlockerDoc, set: setBlockerDoc } = useFirestore<Blocker>(
+  const { data: blockers, add: addBlockerDoc, update: updateBlockerDoc, set: setBlockerDoc } = useSupabaseCollection<Blocker>(
     (user && selectedProjectId) ? `projects/${selectedProjectId}/blockers` : null, 
     []
   );
 
-  const { data: tasks, add: addTaskDoc, update: updateTaskDoc, set: setTaskDoc } = useFirestore<Task>(
+  const { data: tasks, add: addTaskDoc, update: updateTaskDoc, set: setTaskDoc } = useSupabaseCollection<Task>(
     (user && selectedProjectId) ? `projects/${selectedProjectId}/tasks` : null, 
     []
   );
 
-  const { data: functions, add: addFunctionDoc, update: updateFunctionDoc, set: setFunctionDoc } = useFirestore<LLMFunction>(
+  const { data: functions, add: addFunctionDoc, update: updateFunctionDoc, set: setFunctionDoc } = useSupabaseCollection<LLMFunction>(
     (user && selectedProjectId) ? `projects/${selectedProjectId}/ai_functions` : null, 
     []
   );
@@ -485,3 +485,5 @@ export function useProject() {
   }
   return context;
 }
+
+

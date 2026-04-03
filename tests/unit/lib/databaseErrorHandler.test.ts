@@ -1,14 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { handleFirestoreError, OperationType } from '../../../src/lib/firestoreErrorHandler';
-import { auth } from '../../../src/firebase';
+import { handleDataOperationError, DataOperationType } from '../../../src/lib/databaseErrorHandler';
+import { auth } from '../../../src/lib/supabase/appClient';
 
-vi.mock('../../../src/firebase', () => ({
+vi.mock('../../../src/lib/supabase/appClient', () => ({
   auth: {
     currentUser: null
   }
 }));
 
-describe('firestoreErrorHandler', () => {
+describe('databaseErrorHandler', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (auth as any).currentUser = null;
@@ -32,18 +32,18 @@ describe('firestoreErrorHandler', () => {
     };
 
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    
+
     const error = new Error('Test error');
-    
+
     expect(() => {
-      handleFirestoreError(error, OperationType.CREATE, 'test-path');
+      handleDataOperationError(error, DataOperationType.CREATE, 'test-path');
     }).toThrow();
 
     expect(consoleSpy).toHaveBeenCalled();
-    
+
     const thrownError = consoleSpy.mock.calls[0][1];
     const parsedError = JSON.parse(thrownError);
-    
+
     expect(parsedError.error).toBe('Test error');
     expect(parsedError.operationType).toBe('create');
     expect(parsedError.path).toBe('test-path');
@@ -55,14 +55,14 @@ describe('firestoreErrorHandler', () => {
 
   it('should handle non-Error objects', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    
+
     expect(() => {
-      handleFirestoreError('String error', OperationType.UPDATE, 'test-path');
+      handleDataOperationError('String error', DataOperationType.UPDATE, 'test-path');
     }).toThrow();
 
     const thrownError = consoleSpy.mock.calls[0][1];
     const parsedError = JSON.parse(thrownError);
-    
+
     expect(parsedError.error).toBe('String error');
 
     consoleSpy.mockRestore();
@@ -70,14 +70,14 @@ describe('firestoreErrorHandler', () => {
 
   it('should handle missing currentUser', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    
+
     expect(() => {
-      handleFirestoreError(new Error('Test'), OperationType.DELETE, 'test-path');
+      handleDataOperationError(new Error('Test'), DataOperationType.DELETE, 'test-path');
     }).toThrow();
 
     const thrownError = consoleSpy.mock.calls[0][1];
     const parsedError = JSON.parse(thrownError);
-    
+
     expect(parsedError.authInfo.userId).toBeUndefined();
 
     consoleSpy.mockRestore();

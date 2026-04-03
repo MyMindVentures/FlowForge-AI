@@ -1,28 +1,28 @@
 import { useState, useEffect, useCallback } from 'react';
-import { 
-  collection, 
-  query, 
-  onSnapshot, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
+import {
+  collection,
+  query,
+  onSnapshot,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
   QueryConstraint,
   DocumentData,
-  FirestoreError
-} from '../lib/db/firestoreCompat';
-import { db } from '../firebase';
-import { handleFirestoreError, OperationType } from '../lib/firestoreErrorHandler';
+  DatabaseError,
+} from '../lib/db/supabaseData';
+import { db } from '../lib/supabase/appClient';
+import { handleDataOperationError, DataOperationType } from '../lib/databaseErrorHandler';
 
 export type SyncStatus = 'synced' | 'syncing' | 'offline' | 'error';
 
-export function useFirestore<T extends DocumentData>(
+export function useSupabaseCollection<T extends DocumentData>(
   collectionPath: string | null | undefined,
   constraints: QueryConstraint[] = []
 ) {
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<FirestoreError | null>(null);
+  const [error, setError] = useState<DatabaseError | null>(null);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('syncing');
 
   const constraintsKey = JSON.stringify(constraints.map(c => c.toString?.() || 'constraint'));
@@ -37,13 +37,13 @@ export function useFirestore<T extends DocumentData>(
 
     setSyncStatus('syncing');
     const q = query(collection(db, collectionPath), ...constraints);
-    
+
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        const items = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data()
+        const items = snapshot.docs.map((documentSnapshot) => ({
+          id: documentSnapshot.id,
+          ...documentSnapshot.data()
         })) as unknown as T[];
         setData(items);
         setLoading(false);
@@ -53,7 +53,7 @@ export function useFirestore<T extends DocumentData>(
         setError(err);
         setLoading(false);
         setSyncStatus('error');
-        handleFirestoreError(err, OperationType.LIST, collectionPath);
+        handleDataOperationError(err, DataOperationType.LIST, collectionPath);
       }
     );
 
@@ -73,7 +73,7 @@ export function useFirestore<T extends DocumentData>(
       return docRef.id;
     } catch (err) {
       setSyncStatus('error');
-      handleFirestoreError(err, OperationType.CREATE, collectionPath);
+      handleDataOperationError(err, DataOperationType.CREATE, collectionPath);
     }
   }, [collectionPath]);
 
@@ -89,7 +89,7 @@ export function useFirestore<T extends DocumentData>(
       setSyncStatus('synced');
     } catch (err) {
       setSyncStatus('error');
-      handleFirestoreError(err, OperationType.UPDATE, `${collectionPath}/${id}`);
+      handleDataOperationError(err, DataOperationType.UPDATE, `${collectionPath}/${id}`);
     }
   }, [collectionPath]);
 
@@ -97,7 +97,7 @@ export function useFirestore<T extends DocumentData>(
     if (!collectionPath) return;
     setSyncStatus('syncing');
     try {
-      const { setDoc } = await import('../lib/db/firestoreCompat');
+      const { setDoc } = await import('../lib/db/supabaseData');
       const docRef = doc(db, collectionPath, id);
       await setDoc(docRef, {
         ...item,
@@ -106,7 +106,7 @@ export function useFirestore<T extends DocumentData>(
       setSyncStatus('synced');
     } catch (err) {
       setSyncStatus('error');
-      handleFirestoreError(err, OperationType.WRITE, `${collectionPath}/${id}`);
+      handleDataOperationError(err, DataOperationType.WRITE, `${collectionPath}/${id}`);
     }
   }, [collectionPath]);
 
@@ -119,9 +119,10 @@ export function useFirestore<T extends DocumentData>(
       setSyncStatus('synced');
     } catch (err) {
       setSyncStatus('error');
-      handleFirestoreError(err, OperationType.DELETE, `${collectionPath}/${id}`);
+      handleDataOperationError(err, DataOperationType.DELETE, `${collectionPath}/${id}`);
     }
   }, [collectionPath]);
 
   return { data, loading, error, syncStatus, add, update, set, remove };
 }
+

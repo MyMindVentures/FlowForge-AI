@@ -149,6 +149,41 @@ export default function FeatureOverview({
         <div className="space-y-6">
           <section className="p-6 lg:p-8 rounded-2xl lg:rounded-3xl bg-[#141414] border border-white/5 shadow-xl">
             <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-cyan-500/10 rounded-lg text-cyan-400">
+                <Sparkles size={20} />
+              </div>
+              <h3 className="text-base lg:text-lg font-bold text-white uppercase tracking-widest">Strategic Context</h3>
+            </div>
+
+            <div className="space-y-5">
+              <DetailField
+                label="Why It Matters"
+                value={feature.why}
+                isEditing={isEditing}
+                editedValue={editedFeature.why}
+                onChange={(value) => setEditedFeature({ ...editedFeature, why: value })}
+                multiline
+              />
+              <DetailField
+                label="Persona"
+                value={feature.persona}
+                isEditing={isEditing}
+                editedValue={editedFeature.persona}
+                onChange={(value) => setEditedFeature({ ...editedFeature, persona: value })}
+              />
+              <DetailField
+                label="Jobs To Be Done"
+                value={feature.jobsToBeDone}
+                isEditing={isEditing}
+                editedValue={editedFeature.jobsToBeDone}
+                onChange={(value) => setEditedFeature({ ...editedFeature, jobsToBeDone: value })}
+                multiline
+              />
+            </div>
+          </section>
+
+          <section className="p-6 lg:p-8 rounded-2xl lg:rounded-3xl bg-[#141414] border border-white/5 shadow-xl">
+            <div className="flex items-center gap-3 mb-6">
               <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-400">
                 <User size={20} />
               </div>
@@ -182,6 +217,86 @@ export default function FeatureOverview({
               <p className="text-gray-200 leading-relaxed text-sm lg:text-base font-mono whitespace-pre-wrap">{feature.technicalDescription}</p>
             )}
           </section>
+
+          <section className="p-6 lg:p-8 rounded-2xl lg:rounded-3xl bg-[#141414] border border-white/5 shadow-xl">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-400">
+                <CheckCircle2 size={20} />
+              </div>
+              <h3 className="text-base lg:text-lg font-bold text-white uppercase tracking-widest">Delivery Contract</h3>
+            </div>
+
+            <div className="space-y-5">
+              <DetailField
+                label="Acceptance Criteria"
+                value={feature.acceptanceCriteria}
+                isEditing={isEditing}
+                editedValue={editedFeature.acceptanceCriteria}
+                onChange={(value) => setEditedFeature({ ...editedFeature, acceptanceCriteria: value })}
+                multiline
+              />
+              <DetailField
+                label="Success Metrics"
+                value={feature.successMetrics}
+                isEditing={isEditing}
+                editedValue={editedFeature.successMetrics}
+                onChange={(value) => setEditedFeature({ ...editedFeature, successMetrics: value })}
+                multiline
+              />
+              <DetailField
+                label="Non-Functional Requirements"
+                value={feature.nonFunctionalRequirements}
+                isEditing={isEditing}
+                editedValue={editedFeature.nonFunctionalRequirements}
+                onChange={(value) => setEditedFeature({ ...editedFeature, nonFunctionalRequirements: value })}
+                multiline
+              />
+            </div>
+          </section>
+
+          <section className="p-6 lg:p-8 rounded-2xl lg:rounded-3xl bg-[#141414] border border-white/5 shadow-xl">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-rose-500/10 rounded-lg text-rose-400">
+                <AlertCircle size={20} />
+              </div>
+              <h3 className="text-base lg:text-lg font-bold text-white uppercase tracking-widest">Execution Notes</h3>
+            </div>
+
+            <div className="space-y-5">
+              <DetailField
+                label="Dependencies"
+                value={feature.dependencies}
+                isEditing={isEditing}
+                editedValue={editedFeature.dependencies}
+                onChange={(value) => setEditedFeature({ ...editedFeature, dependencies: value })}
+                multiline
+              />
+              <DetailField
+                label="Assumptions"
+                value={feature.assumptions}
+                isEditing={isEditing}
+                editedValue={editedFeature.assumptions}
+                onChange={(value) => setEditedFeature({ ...editedFeature, assumptions: value })}
+                multiline
+              />
+              <DetailField
+                label="Risks"
+                value={feature.risks}
+                isEditing={isEditing}
+                editedValue={editedFeature.risks}
+                onChange={(value) => setEditedFeature({ ...editedFeature, risks: value })}
+                multiline
+              />
+              <DetailField
+                label="Notes"
+                value={feature.notes}
+                isEditing={isEditing}
+                editedValue={editedFeature.notes}
+                onChange={(value) => setEditedFeature({ ...editedFeature, notes: value })}
+                multiline
+              />
+            </div>
+          </section>
         </div>
       </div>
 
@@ -202,6 +317,66 @@ export default function FeatureOverview({
               <p className="text-[10px] text-gray-600 uppercase font-bold mb-1">Project</p>
               <p className="text-sm text-gray-300">{project.name}</p>
             </div>
+            <div>
+              <p className="text-[10px] text-gray-600 uppercase font-bold mb-1">Category</p>
+              {isEditing ? (
+                <input
+                  value={editedFeature.category || ''}
+                  onChange={(e) => setEditedFeature({ ...editedFeature, category: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                />
+              ) : (
+                <p className="text-sm text-gray-300">{feature.category || 'Not set'}</p>
+              )}
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-600 uppercase font-bold mb-1">Epic</p>
+              {isEditing ? (
+                <input
+                  value={editedFeature.epic || ''}
+                  onChange={(e) => setEditedFeature({ ...editedFeature, epic: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                />
+              ) : (
+                <p className="text-sm text-gray-300">{feature.epic || 'Not set'}</p>
+              )}
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-600 uppercase font-bold mb-1">Release</p>
+              {isEditing ? (
+                <input
+                  value={editedFeature.release || ''}
+                  onChange={(e) => setEditedFeature({ ...editedFeature, release: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                />
+              ) : (
+                <p className="text-sm text-gray-300">{feature.release || 'Not set'}</p>
+              )}
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-600 uppercase font-bold mb-1">Figma Link</p>
+              {isEditing ? (
+                <input
+                  value={editedFeature.figmaLink || ''}
+                  onChange={(e) => setEditedFeature({ ...editedFeature, figmaLink: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                />
+              ) : (
+                <p className="text-sm text-gray-300 break-all">{feature.figmaLink || 'Not set'}</p>
+              )}
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-600 uppercase font-bold mb-1">Spec Link</p>
+              {isEditing ? (
+                <input
+                  value={editedFeature.specLink || ''}
+                  onChange={(e) => setEditedFeature({ ...editedFeature, specLink: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                />
+              ) : (
+                <p className="text-sm text-gray-300 break-all">{feature.specLink || 'Not set'}</p>
+              )}
+            </div>
           </div>
         </section>
 
@@ -215,6 +390,45 @@ export default function FeatureOverview({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function DetailField({
+  label,
+  value,
+  editedValue,
+  isEditing,
+  onChange,
+  multiline = false,
+}: {
+  label: string;
+  value?: string;
+  editedValue?: string;
+  isEditing: boolean;
+  onChange: (value: string) => void;
+  multiline?: boolean;
+}) {
+  return (
+    <div>
+      <p className="text-[10px] text-gray-600 uppercase font-bold mb-2 tracking-widest">{label}</p>
+      {isEditing ? (
+        multiline ? (
+          <textarea
+            value={editedValue || ''}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-gray-200 leading-relaxed text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 h-28 resize-none"
+          />
+        ) : (
+          <input
+            value={editedValue || ''}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+          />
+        )
+      ) : (
+        <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">{value || 'Not set yet.'}</p>
+      )}
     </div>
   );
 }
@@ -237,3 +451,5 @@ function ImpactCard({ label, items, color }: { label: string, items: string[], c
     </div>
   );
 }
+
+

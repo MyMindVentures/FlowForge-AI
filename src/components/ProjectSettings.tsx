@@ -4,8 +4,8 @@ import { Settings, Save, Shield, Eye, Globe, Zap, Github, Plus, Trash2, Check, L
 import { Project, ProjectMember, GitHubRepo, UserRole } from '../types';
 import { useToast } from './Toast';
 import { cn } from '../lib/utils';
-import { collection, addDoc } from '../lib/db/firestoreCompat';
-import { db, auth } from '../firebase';
+import { collection, addDoc } from '../lib/db/supabaseData';
+import { db, auth } from '../lib/supabase/appClient';
 import { AuditService, AuditAction } from '../services/audit';
 
 interface ProjectSettingsProps {
@@ -458,3 +458,5 @@ export default function ProjectSettings({ project, onUpdate, onBack }: ProjectSe
     </div>
   );
 }
+
+

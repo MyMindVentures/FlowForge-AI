@@ -74,3 +74,5 @@ export default function IntegrityBadge({ status, className, showLabel = true }: 
     </div>
   );
 }
+
+

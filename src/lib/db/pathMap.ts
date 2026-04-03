@@ -100,6 +100,8 @@ export function resolveCollectionPath(collectionPath: string): CollectionResolut
         return { table: 'features', implicitFilters: baseFilter };
       case 'versions':
         return { table: 'project_versions', implicitFilters: baseFilter };
+      case 'assets':
+        return { table: 'assets', implicitFilters: baseFilter };
       case 'ui_pages':
         return { table: 'ui_pages', implicitFilters: baseFilter };
       case 'ui_components':
@@ -175,3 +177,4 @@ export function mapAppRecordToDb(record: Record<string, unknown>) {
     return accumulator;
   }, {});
 }
+

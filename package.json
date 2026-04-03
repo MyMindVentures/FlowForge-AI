@@ -4,6 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "env:check": "node scripts/check-env.mjs",
+    "predev": "npm run env:check",
+    "prebuild": "npm run env:check",
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
     "preview": "vite preview",
@@ -13,9 +16,7 @@
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "migrate:firebase:export": "tsx scripts/firebase-export.ts",
-    "migrate:supabase:import": "tsx scripts/supabase-import.ts",
-    "migrate:supabase:validate": "tsx scripts/supabase-validate.ts"
+    "sync:flowforge:product": "tsx scripts/sync-flowforge-product.ts"
   },
   "dependencies": {
     "@google/genai": "^1.48.0",
@@ -26,8 +27,6 @@
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
-    "firebase": "^12.11.0",
-    "firebase-admin": "^13.4.0",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "react": "^19.0.0",

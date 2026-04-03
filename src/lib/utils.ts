@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
 
 /**
  * Resizes a base64 image to a maximum width/height while maintaining aspect ratio.
- * This helps stay within Firestore's 1MB document limit.
+ * This keeps generated media payloads smaller before persistence.
  */
 export async function resizeBase64Image(
   base64: string, 
@@ -49,3 +49,5 @@ export async function resizeBase64Image(
     img.onerror = (err) => reject(err);
   });
 }
+
+

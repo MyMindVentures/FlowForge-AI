@@ -1,8 +1,8 @@
-import { supabase } from '../../firebase';
+import { supabase } from '../supabase/appClient';
 import { appToDbKey, mapAppRecordToDb, mapDbRecordToApp, resolveCollectionPath, resolveDocumentPath } from './pathMap';
 
 export type DocumentData = Record<string, unknown>;
-export type FirestoreError = Error;
+export type DatabaseError = Error;
 
 type CollectionRef = {
   kind: 'collection';
@@ -51,7 +51,7 @@ type SnapshotDoc<T> = {
 
 async function executeCollectionQuery<T>(path: string, constraints: QueryConstraint[]) {
   const resolution = resolveCollectionPath(path);
-  let query = supabase.from(resolution.table).select('*');
+  let query = supabase!.from(resolution.table).select('*');
 
   for (const filter of resolution.implicitFilters) {
     switch (filter.operator) {
@@ -127,7 +127,7 @@ async function executeCollectionQuery<T>(path: string, constraints: QueryConstra
 
 async function executeDocumentQuery<T>(path: string) {
   const resolution = resolveDocumentPath(path);
-  let query = supabase.from(resolution.table).select('*').eq('id', resolution.documentId);
+  let query = supabase!.from(resolution.table).select('*').eq('id', resolution.documentId);
 
   for (const filter of resolution.implicitFilters) {
     query = filter.value === null ? query.is(filter.column, null) : query.eq(filter.column, filter.value);
@@ -151,7 +151,7 @@ function toSnapshotDoc<T extends DocumentData>(row: T): SnapshotDoc<T> {
 
 function subscribeToTable(path: string, onRefresh: () => void) {
   const resolution = resolveCollectionPath(path);
-  const channel = supabase
+  const channel = supabase!
     .channel(`ff-sync:${resolution.table}:${Math.random().toString(36).slice(2)}`)
     .on(
       'postgres_changes',
@@ -167,7 +167,7 @@ function subscribeToTable(path: string, onRefresh: () => void) {
     .subscribe();
 
   return () => {
-    void supabase.removeChannel(channel);
+    void supabase!.removeChannel(channel);
   };
 }
 
@@ -235,7 +235,7 @@ export function limit(count: number) {
 export function onSnapshot<T extends DocumentData>(
   input: CollectionRef | QueryRef | DocRef,
   onNext: (snapshot: any) => void,
-  onError?: (error: FirestoreError) => void,
+  onError?: (error: DatabaseError) => void,
 ) {
   let active = true;
 
@@ -249,7 +249,7 @@ export function onSnapshot<T extends DocumentData>(
 
         onNext({
           exists: () => Boolean(row),
-          id: row && 'id' in row ? String((row as { id: string }).id) : input.id,
+          id: row && 'id' in row ? String((row as unknown as { id: string }).id) : input.id,
           data: () => {
             if (!row) {
               return undefined;
@@ -271,7 +271,7 @@ export function onSnapshot<T extends DocumentData>(
       });
     } catch (error) {
       if (onError) {
-        onError(error as FirestoreError);
+        onError(error as DatabaseError);
       }
     }
   };
@@ -297,7 +297,7 @@ export async function getDoc<T extends DocumentData>(docRef: DocRef) {
   const row = await executeDocumentQuery<T>(docRef.path);
   return {
     exists: () => Boolean(row),
-    id: row && 'id' in row ? String((row as { id: string }).id) : docRef.id,
+    id: row && 'id' in row ? String((row as unknown as { id: string }).id) : docRef.id,
     data: () => {
       if (!row) {
         return undefined;
@@ -329,7 +329,7 @@ function withImplicitFields(docRef: DocRef, payload: DocumentData) {
 
 export async function setDoc(docRef: DocRef, payload: DocumentData, options?: { merge?: boolean }) {
   const resolution = resolveDocumentPath(docRef.path);
-  const { error } = await supabase
+  const { error } = await supabase!
     .from(resolution.table)
     .upsert(withImplicitFields(docRef, payload), { onConflict: 'id' })
     .select('id')
@@ -344,7 +344,7 @@ export async function setDoc(docRef: DocRef, payload: DocumentData, options?: { 
 
 export async function updateDoc(docRef: DocRef, payload: DocumentData) {
   const resolution = resolveDocumentPath(docRef.path);
-  let query = supabase.from(resolution.table).update(mapAppRecordToDb(payload)).eq('id', resolution.documentId);
+  let query = supabase!.from(resolution.table).update(mapAppRecordToDb(payload)).eq('id', resolution.documentId);
 
   for (const filter of resolution.implicitFilters) {
     query = filter.value === null ? query.is(filter.column, null) : query.eq(filter.column, filter.value);
@@ -358,7 +358,7 @@ export async function updateDoc(docRef: DocRef, payload: DocumentData) {
 
 export async function deleteDoc(docRef: DocRef) {
   const resolution = resolveDocumentPath(docRef.path);
-  let query = supabase.from(resolution.table).delete().eq('id', resolution.documentId);
+  let query = supabase!.from(resolution.table).delete().eq('id', resolution.documentId);
 
   for (const filter of resolution.implicitFilters) {
     query = filter.value === null ? query.is(filter.column, null) : query.eq(filter.column, filter.value);
@@ -394,3 +394,4 @@ export function writeBatch(_db: unknown) {
     },
   };
 }
+

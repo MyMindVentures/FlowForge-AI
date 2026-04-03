@@ -47,3 +47,5 @@ export default function Splash({ onComplete }: SplashProps) {
     </div>
   );
 }
+
+

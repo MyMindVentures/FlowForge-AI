@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { doc, getDoc } from "../../lib/db/firestoreCompat";
-import { db } from "../../firebase";
+import { doc, getDoc } from "../../lib/db/supabaseData";
+import { db } from "../../lib/supabase/appClient";
 import { Project, Feature, Version, LLMFunction, UIPage, UIComponent, UILayout, UIStyleSystem } from "../../types";
 import { FeatureSuggestionSchema, PRDSchema, LogoConceptSchema, UIImpactAnalysisSchema, UIArchitectureSchema } from "./types";
 
@@ -589,3 +589,5 @@ export class AIFunctions {
     return text;
   }
 }
+
+
