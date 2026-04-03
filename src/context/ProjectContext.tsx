@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { Project, Feature, Version, UIPage, UIComponent, UILayout, UIStyleSystem, PRDSection, AuditFinding, ReadinessCheck, Blocker, Task, LLMFunction } from '../types';
 import { useFirestore } from '../hooks/useFirestore';
 import { useAuth } from './AuthContext';
-import { where } from 'firebase/firestore';
+import { where } from '../lib/db/firestoreCompat';
 import { SyncService } from '../services/SyncService';
 
 interface ProjectContextType {
@@ -89,7 +89,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
           creatingSystemProject.current = false;
         });
       } else if (flowForgeProjects.length > 1) {
-        console.warn(`ProjectContext: Found ${flowForgeProjects.length} duplicate FlowForge AI projects. Consolidation will be handled by DatabaseTruthSync.`);
+        console.warn(`ProjectContext: Found ${flowForgeProjects.length} duplicate FlowForge AI projects. Review and consolidate them through the sync service workflow.`);
       }
     }
   }, [projectsLoading, projects, user, isAdmin, addProjectDoc]);

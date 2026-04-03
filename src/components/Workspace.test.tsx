@@ -7,10 +7,11 @@ import { ToastProvider } from './Toast';
 // Mock the hooks
 vi.mock('../firebase', () => ({
   db: {},
-  auth: { currentUser: { uid: '123' } }
+  auth: { currentUser: { uid: '123' } },
+  supabase: {}
 }));
 
-vi.mock('firebase/firestore', () => ({
+vi.mock('../lib/db/firestoreCompat', () => ({
   collection: vi.fn(),
   addDoc: vi.fn().mockResolvedValue({ id: 'new-session-id' }),
   query: vi.fn(),

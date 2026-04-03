@@ -7,10 +7,11 @@ vi.mock('../../../src/firebase', () => ({
   db: {},
   auth: {
     currentUser: { uid: 'test-user-id' }
-  }
+  },
+  supabase: {}
 }));
 
-vi.mock('firebase/firestore', () => ({
+vi.mock('../../../src/lib/db/firestoreCompat', () => ({
   collection: vi.fn(),
   doc: vi.fn(),
   getDoc: vi.fn().mockResolvedValue({

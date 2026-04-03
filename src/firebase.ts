@@ -1,20 +1,123 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore, getDocFromServer, doc } from 'firebase/firestore';
-import firebaseConfig from '../firebase-applet-config.json';
+import { createClient, type Session, type User as SupabaseUser } from '@supabase/supabase-js';
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+type ProviderInfo = {
+  providerId: string;
+  displayName: string | null;
+  email: string | null;
+  photoURL: string | null;
+};
 
-// Connection test
-async function testConnection() {
-  try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error("Please check your Firebase configuration.");
-    }
+export type AuthenticatedUser = {
+  uid: string;
+  authUserId: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  emailVerified: boolean;
+  isAnonymous: boolean;
+  tenantId: string | null;
+  providerData: ProviderInfo[];
+};
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabasePublishableKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+const missingSupabaseConfigMessage = 'Supabase environment variables are missing. Set VITE_SUPABASE_URL and either VITE_SUPABASE_ANON_KEY or VITE_SUPABASE_PUBLISHABLE_KEY.';
+
+export function isSupabaseConfigured() {
+  return Boolean(supabaseUrl && supabasePublishableKey);
+}
+
+function requireSupabaseConfig() {
+  if (!isSupabaseConfigured()) {
+    throw new Error(missingSupabaseConfigMessage);
   }
 }
-testConnection();
+
+export const supabase = isSupabaseConfigured() ? createClient(supabaseUrl!, supabasePublishableKey!, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+}) : null;
+
+let currentUser: AuthenticatedUser | null = null;
+
+export const auth = {
+  get currentUser() {
+    return currentUser;
+  },
+};
+
+export const db = {
+  provider: 'supabase',
+} as const;
+
+export function setCurrentUser(user: AuthenticatedUser | null) {
+  currentUser = user;
+}
+
+export function getDefaultAdminEmail() {
+  return import.meta.env.VITE_SUPABASE_ADMIN_EMAIL || 'lacometta33@gmail.com';
+}
+
+export function mapSupabaseUserToProviderData(user: SupabaseUser): ProviderInfo[] {
+  const identities = user.identities || [];
+  if (!identities.length) {
+    return [];
+  }
+
+  return identities.map((identity) => ({
+    providerId: identity.provider,
+    displayName: (identity.identity_data?.full_name as string | undefined) || (identity.identity_data?.name as string | undefined) || null,
+    email: (identity.identity_data?.email as string | undefined) || user.email || null,
+    photoURL: (identity.identity_data?.avatar_url as string | undefined) || null,
+  }));
+}
+
+export async function signInWithGoogle() {
+  requireSupabaseConfig();
+  const redirectTo = typeof window !== 'undefined' ? window.location.origin : undefined;
+  const { error } = await supabase!.auth.signInWithOAuth({
+    provider: 'google',
+    options: redirectTo ? { redirectTo } : undefined,
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function signOutCurrentUser() {
+  requireSupabaseConfig();
+  const { error } = await supabase!.auth.signOut();
+  if (error) {
+    throw error;
+  }
+  setCurrentUser(null);
+}
+
+export function onAuthSessionChange(callback: (sessionUser: SupabaseUser | null, session: Session | null) => void) {
+  if (!supabase) {
+    callback(null, null);
+    return {
+      unsubscribe() {}
+    };
+  }
+
+  const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    callback(session?.user ?? null, session ?? null);
+  });
+
+  return data.subscription;
+}
+
+export async function getInitialSessionUser() {
+  requireSupabaseConfig();
+  const { data, error } = await supabase!.auth.getSession();
+  if (error) {
+    throw error;
+  }
+  return data.session?.user ?? null;
+}

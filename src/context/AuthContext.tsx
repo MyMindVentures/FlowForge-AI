@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { onAuthStateChanged, User, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
-import { FirebaseError } from 'firebase/app';
-import { doc, getDoc, setDoc, updateDoc, onSnapshot } from 'firebase/firestore';
-import { auth, db } from '../firebase';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { doc, updateDoc, onSnapshot } from '../lib/db/firestoreCompat';
+import { auth, db, getInitialSessionUser, onAuthSessionChange, setCurrentUser, signInWithGoogle, signOutCurrentUser, supabase, type AuthenticatedUser } from '../firebase';
 import { UserProfile, UserRole } from '../types';
+import { ensureUserProfile } from '../lib/db/profile';
 
 interface AuthContextType {
-  user: User | null;
+  user: AuthenticatedUser | null;
   profile: UserProfile | null;
   loading: boolean;
   authError: string | null;
@@ -19,102 +19,105 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthenticatedUser | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
   const getAuthErrorMessage = (error: unknown) => {
-    if (error instanceof FirebaseError) {
-      switch (error.code) {
-        case 'auth/unauthorized-domain':
-          return 'Google sign-in is blocked for this app URL. Add localhost, 127.0.0.1, and any active dev hostnames to Firebase Authentication > Settings > Authorized domains.';
-        case 'auth/popup-blocked':
-          return 'The Google sign-in popup was blocked by the browser. Allow popups for this site and try again.';
-        case 'auth/popup-closed-by-user':
-          return 'The Google sign-in popup was closed before authentication completed.';
-        case 'auth/cancelled-popup-request':
-          return null;
-        default:
-          return error.message;
-      }
-    }
-
     if (error instanceof Error) {
       return error.message;
     }
 
-    return 'Google sign-in failed. Check the browser console and Firebase Authentication settings.';
+    return 'Google sign-in failed. Check Supabase Auth provider settings and the browser console.';
   };
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
+    let unsubscribeProfile: (() => void) | null = null;
+
+    const applySessionUser = async (sessionUser: SupabaseUser | null) => {
+      if (unsubscribeProfile) {
+        unsubscribeProfile();
+        unsubscribeProfile = null;
+      }
+
       setAuthError(null);
-      
-      if (firebaseUser) {
-        // Fetch or create profile
-        const profileRef = doc(db, 'users', firebaseUser.uid);
-        
-        // Use onSnapshot for real-time profile updates
-        const unsubscribeProfile = onSnapshot(profileRef, async (docSnap) => {
-          if (docSnap.exists()) {
-            const data = docSnap.data() as UserProfile;
-            const isAdmin = firebaseUser.email === 'lacometta33@gmail.com';
-            
-            if (isAdmin && data.role !== 'Admin') {
-              await updateDoc(profileRef, { 
-                role: 'Admin',
-                onboarded: true,
-                storytellingCompleted: true
-              });
-            }
-            setProfile(data);
-          } else {
-            // Create initial profile
-            const isAdmin = firebaseUser.email === 'lacometta33@gmail.com';
-            const newProfile: UserProfile = {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email || '',
-              displayName: firebaseUser.displayName || 'Anonymous',
-              photoURL: firebaseUser.photoURL || undefined,
-              role: isAdmin ? 'Admin' : 'Builder', // Default role
-              onboarded: isAdmin, // Admins don't need onboarding
-              storytellingCompleted: isAdmin, // Admins don't need storytelling
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              lastLogin: new Date().toISOString(),
-              settings: {
-                theme: 'dark',
-                notifications: true
-              }
-            };
-            await setDoc(profileRef, newProfile);
-            setProfile(newProfile);
+
+      if (!sessionUser) {
+        setUser(null);
+        setProfile(null);
+        setCurrentUser(null);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        const { profile: ensuredProfile, authUser } = await ensureUserProfile(sessionUser);
+        setUser(authUser);
+        setProfile(ensuredProfile);
+
+        const profileRef = doc(db, 'users', ensuredProfile.uid);
+        unsubscribeProfile = onSnapshot(profileRef, (docSnap) => {
+          if (!docSnap.exists()) {
+            setProfile(null);
+            setUser(null);
+            setCurrentUser(null);
+            setLoading(false);
+            return;
           }
+
+          const nextProfile = {
+            uid: ensuredProfile.uid,
+            ...(docSnap.data() as UserProfile),
+          } as UserProfile;
+
+          const nextUser: AuthenticatedUser = {
+            ...authUser,
+            uid: nextProfile.uid,
+            email: nextProfile.email,
+            displayName: nextProfile.displayName,
+            photoURL: nextProfile.photoURL || null,
+          };
+
+          setProfile(nextProfile);
+          setUser(nextUser);
+          setCurrentUser(nextUser);
           setLoading(false);
         }, (error) => {
           console.error('AuthContext: Profile snapshot error:', error);
           setLoading(false);
         });
-
-        return () => unsubscribeProfile();
-      } else {
-        setProfile(null);
+      } catch (error) {
+        setAuthError(getAuthErrorMessage(error));
         setLoading(false);
       }
+    };
+
+    const subscription = onAuthSessionChange((sessionUser) => {
+      void applySessionUser(sessionUser);
     });
 
-    return () => unsubscribeAuth();
+    void getInitialSessionUser().then((sessionUser) => {
+      void applySessionUser(sessionUser);
+    }).catch((error) => {
+      setAuthError(getAuthErrorMessage(error));
+      setLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+      if (unsubscribeProfile) {
+        unsubscribeProfile();
+      }
+    };
   }, []);
 
   const login = async () => {
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
-
     try {
       setAuthError(null);
-      await signInWithPopup(auth, provider);
+      await signInWithGoogle();
     } catch (error) {
       setAuthError(getAuthErrorMessage(error));
     }
@@ -122,7 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     setAuthError(null);
-    await signOut(auth);
+    await signOutCurrentUser();
   };
 
   const updateProfile = async (data: Partial<UserProfile>) => {

@@ -4,7 +4,7 @@ import { Settings, Save, Shield, Eye, Globe, Zap, Github, Plus, Trash2, Check, L
 import { Project, ProjectMember, GitHubRepo, UserRole } from '../types';
 import { useToast } from './Toast';
 import { cn } from '../lib/utils';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc } from '../lib/db/firestoreCompat';
 import { db, auth } from '../firebase';
 import { AuditService, AuditAction } from '../services/audit';
 

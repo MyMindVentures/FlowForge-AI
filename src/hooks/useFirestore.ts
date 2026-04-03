@@ -10,7 +10,7 @@ import {
   QueryConstraint,
   DocumentData,
   FirestoreError
-} from 'firebase/firestore';
+} from '../lib/db/firestoreCompat';
 import { db } from '../firebase';
 import { handleFirestoreError, OperationType } from '../lib/firestoreErrorHandler';
 
@@ -97,7 +97,7 @@ export function useFirestore<T extends DocumentData>(
     if (!collectionPath) return;
     setSyncStatus('syncing');
     try {
-      const { setDoc } = await import('firebase/firestore');
+      const { setDoc } = await import('../lib/db/firestoreCompat');
       const docRef = doc(db, collectionPath, id);
       await setDoc(docRef, {
         ...item,

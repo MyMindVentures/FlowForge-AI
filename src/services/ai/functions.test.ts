@@ -6,10 +6,11 @@ vi.mock('../../firebase', () => ({
   db: {},
   auth: {
     currentUser: { uid: 'test-user-id' }
-  }
+  },
+  supabase: {}
 }));
 
-vi.mock('firebase/firestore', () => ({
+vi.mock('../../lib/db/firestoreCompat', () => ({
   doc: vi.fn(),
   getDoc: vi.fn().mockResolvedValue({
     exists: () => false,

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { FolderKanban, Search, ChevronRight, Clock, ArrowLeft, Plus, Loader2 } from 'lucide-react';
-import { where, orderBy } from 'firebase/firestore';
+import { where, orderBy } from '../lib/db/firestoreCompat';
 import { Project, Feature } from '../types';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '../lib/utils';

@@ -13,10 +13,11 @@ vi.mock('../firebase', () => ({
   db: {},
   auth: {
     currentUser: { uid: 'test-user-id', providerData: [] }
-  }
+  },
+  supabase: {}
 }));
 
-vi.mock('firebase/firestore', () => ({
+vi.mock('../lib/db/firestoreCompat', () => ({
   collection: vi.fn(),
   addDoc: vi.fn(),
   serverTimestamp: vi.fn()
@@ -173,7 +174,7 @@ describe('geminiService', () => {
 
   describe('logging errors', () => {
     it('handles logAIUsage error', async () => {
-      const { addDoc } = await import('firebase/firestore');
+      const { addDoc } = await import('../lib/db/firestoreCompat');
       (addDoc as any).mockRejectedValueOnce(new Error('Firestore Error'));
       
       mockGenerateContent.mockResolvedValue({ text: '[]' });
@@ -184,7 +185,7 @@ describe('geminiService', () => {
     });
 
     it('handles logAIError error', async () => {
-      const { addDoc } = await import('firebase/firestore');
+      const { addDoc } = await import('../lib/db/firestoreCompat');
       (addDoc as any).mockRejectedValueOnce(new Error('Firestore Error'));
       
       mockGenerateContent.mockRejectedValue(new Error('AI Error'));

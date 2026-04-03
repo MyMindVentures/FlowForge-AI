@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Edit2, Clock, MessageSquare, Bot, X, Save, Loader2, Sparkles, Lock, Unlock, Terminal, FileText, Layout as LayoutIcon, History, Image as ImageIcon } from 'lucide-react';
-import { doc, updateDoc, orderBy, where, limit } from 'firebase/firestore';
+import { doc, updateDoc, orderBy, where, limit } from '../lib/db/firestoreCompat';
 import { db } from '../firebase';
 import { Project, Feature, Comment } from '../types';
 import { formatDistanceToNow } from 'date-fns';

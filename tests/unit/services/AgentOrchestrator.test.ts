@@ -8,13 +8,14 @@ vi.mock('../../../src/firebase', () => ({
   db: {},
   auth: {
     currentUser: { uid: 'test-user-id' }
-  }
+  },
+  supabase: {}
 }));
 
 const mockAddDoc = vi.fn().mockResolvedValue({ id: 'log-id' });
 const mockUpdateDoc = vi.fn().mockResolvedValue({});
 
-vi.mock('firebase/firestore', () => ({
+vi.mock('../../../src/lib/db/firestoreCompat', () => ({
   collection: vi.fn(),
   addDoc: (...args: any[]) => mockAddDoc(...args),
   doc: vi.fn(),

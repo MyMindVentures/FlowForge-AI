@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useFirestore } from '../../../src/hooks/useFirestore';
-import { onSnapshot, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { onSnapshot, addDoc, updateDoc, deleteDoc } from '../../../src/lib/db/firestoreCompat';
 
-// Mock Firebase
+// Mock runtime bootstrap
 vi.mock('../../../src/firebase', () => ({
-  db: {}
+  db: {},
+  supabase: {}
 }));
 
 vi.mock('../../../src/lib/firestoreErrorHandler', () => ({
@@ -13,7 +14,7 @@ vi.mock('../../../src/lib/firestoreErrorHandler', () => ({
   OperationType: { LIST: 'list', CREATE: 'create', UPDATE: 'update', DELETE: 'delete' }
 }));
 
-vi.mock('firebase/firestore', () => {
+vi.mock('../../../src/lib/db/firestoreCompat', () => {
   const mockOnSnapshot = vi.fn((q, onNext, onError) => {
     onNext({
       docs: [
@@ -32,6 +33,9 @@ vi.mock('firebase/firestore', () => {
     setDoc: vi.fn().mockResolvedValue({}),
     deleteDoc: vi.fn().mockResolvedValue({}),
     doc: vi.fn(),
+    where: vi.fn(),
+    orderBy: vi.fn(),
+    limit: vi.fn(),
     QueryConstraint: vi.fn()
   };
 });
@@ -117,7 +121,7 @@ describe('useFirestore', () => {
   });
 
   it('set should call setDoc and update status', async () => {
-    const { setDoc } = await import('firebase/firestore');
+    const { setDoc } = await import('../../../src/lib/db/firestoreCompat');
     const { result } = renderHook(() => useFirestore('test-collection'));
 
     await act(async () => {
@@ -129,7 +133,7 @@ describe('useFirestore', () => {
   });
 
   it('set should handle error', async () => {
-    const { setDoc } = await import('firebase/firestore');
+    const { setDoc } = await import('../../../src/lib/db/firestoreCompat');
     (setDoc as any).mockRejectedValueOnce(new Error('Set error'));
     const { result } = renderHook(() => useFirestore('test-collection'));
 

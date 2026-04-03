@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Image as ImageIcon, Loader2, Sparkles, Maximize2, RefreshCw, Terminal } from 'lucide-react';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc } from '../../lib/db/firestoreCompat';
 import { db } from '../../firebase';
 import { Project, Feature } from '../../types';
 import { cn, resizeBase64Image } from '../../lib/utils';

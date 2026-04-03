@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Suggestion, Feature, Comment, Project, UsageLog, ErrorLog } from "../types";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp } from "../lib/db/firestoreCompat";
 import { db, auth } from "../firebase";
 import { handleFirestoreError, OperationType } from "../lib/firestoreErrorHandler";
 

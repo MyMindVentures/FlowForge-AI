@@ -1,4 +1,4 @@
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from '../lib/db/firestoreCompat';
 import { db, auth } from '../firebase';
 
 export enum AuditAction {

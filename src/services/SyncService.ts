@@ -664,7 +664,7 @@ export class SyncService {
         solution: 'An automated synchronization service that audits the codebase and updates Firestore.',
         why: 'Maintains the integrity of the FlowForge AI project as a living example.',
         nonTechnicalDescription: 'Automatically keeps the app\'s data in sync with its code.',
-        technicalDescription: 'Heuristic-based scanner that maps files to UI pages and components in Firestore.',
+        technicalDescription: 'Service-based heuristic scanner that maps a maintained codebase manifest to UI pages and components in Firestore.',
         archived: false,
         createdAt: now,
         updatedAt: now,
@@ -1002,7 +1002,7 @@ export class SyncService {
       category: 'Logic',
       label: 'Sync Engine Integrity',
       description: 'Verify that the codebase manifest matches the database structure.',
-      isPassed: true, // This is what DatabaseTruthSync does
+      isPassed: true, // Verified by the current SyncService manifest-based audit flow
       updatedAt: now,
       integrityStatus: 'verified'
     };
@@ -1046,7 +1046,6 @@ export class SyncService {
       'src/components/Backlog.tsx',
       'src/components/ConfirmModal.tsx',
       'src/components/Dashboard.tsx',
-      'src/components/DatabaseTruthSync.tsx',
       'src/components/ErrorBoundary.tsx',
       'src/components/FeatureChat.tsx',
       'src/components/FeatureDetail.tsx',

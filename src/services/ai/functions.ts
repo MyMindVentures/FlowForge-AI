@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc } from "../../lib/db/firestoreCompat";
 import { db } from "../../firebase";
 import { Project, Feature, Version, LLMFunction, UIPage, UIComponent, UILayout, UIStyleSystem } from "../../types";
 import { FeatureSuggestionSchema, PRDSchema, LogoConceptSchema, UIImpactAnalysisSchema, UIArchitectureSchema } from "./types";

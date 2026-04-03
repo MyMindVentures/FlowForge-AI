@@ -6,7 +6,7 @@ import { AgentOrchestrator, AgentTaskType } from '../services/ai/orchestrator';
 import { FeatureSuggestion } from '../services/ai/types';
 import { useProject } from '../context/ProjectContext';
 import { useToast } from './Toast';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc } from '../lib/db/firestoreCompat';
 import { db } from '../firebase';
 
 interface FeatureChatProps {

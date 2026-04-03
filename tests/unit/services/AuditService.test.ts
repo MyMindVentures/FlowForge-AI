@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AuditService, AuditAction } from '../../../src/services/audit';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp } from '../../../src/lib/db/firestoreCompat';
 import { auth } from '../../../src/firebase';
 
 // Mock Firebase
@@ -8,12 +8,13 @@ vi.mock('../../../src/firebase', () => ({
   db: {},
   auth: {
     currentUser: { uid: 'test-user-id', email: 'test@test.com' }
-  }
+  },
+  supabase: {}
 }));
 
 const mockAddDoc = vi.fn().mockResolvedValue({ id: 'log-id' });
 
-vi.mock('firebase/firestore', () => ({
+vi.mock('../../../src/lib/db/firestoreCompat', () => ({
   collection: vi.fn(),
   addDoc: (...args: any[]) => mockAddDoc(...args),
   serverTimestamp: vi.fn().mockReturnValue('mock-timestamp')

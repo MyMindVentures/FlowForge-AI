@@ -1,4 +1,4 @@
-import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc } from '../../lib/db/firestoreCompat';
 import { db, auth } from '../../firebase';
 import { AIFunctions } from './functions';
 import { Project, Feature } from '../../types';

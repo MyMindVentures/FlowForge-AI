@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, Folder, Clock, ChevronRight, Trash2, Loader2, Search, Filter, Star, Archive, ExternalLink, X, AlertCircle, Check } from 'lucide-react';
-import { collection, addDoc, doc, updateDoc, deleteDoc, where } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, deleteDoc, where } from '../lib/db/firestoreCompat';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
 import { db, auth } from '../firebase';
 import { Project } from '../types';

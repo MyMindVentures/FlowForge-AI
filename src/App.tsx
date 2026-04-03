@@ -24,7 +24,6 @@ import Splash from './components/Splash';
 import Auth from './components/Auth';
 import Storytelling from './components/Storytelling';
 import ErrorBoundary from './components/ErrorBoundary';
-import DatabaseTruthSync from './components/DatabaseTruthSync';
 import { ToastProvider } from './components/Toast';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
@@ -387,7 +386,6 @@ export default function App() {
       <ToastProvider>
         <AuthProvider>
           <ProjectProvider>
-            <DatabaseTruthSync />
             <AppRoutes />
           </ProjectProvider>
         </AuthProvider>

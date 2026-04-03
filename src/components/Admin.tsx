@@ -21,7 +21,7 @@ import {
   Layout
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { where, orderBy, limit } from 'firebase/firestore';
+import { where, orderBy, limit } from '../lib/db/firestoreCompat';
 import { AIModelConfig, PromptTemplate, APIKeyConfig, UsageLog, ErrorLog, AuditLogEntry, Task, LLMFunction, PRDSection, AuditFinding, ReadinessCheck } from '../types';
 import { cn } from '../lib/utils';
 import { useFirestore } from '../hooks/useFirestore';

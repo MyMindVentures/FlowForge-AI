@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Sparkles, Check, X, RefreshCw, Loader2, MessageSquare, User, Bot, Plus, History, Calendar, ChevronRight, Trash2, AlertCircle, ArrowLeft } from 'lucide-react';
-import { collection, addDoc, query, where, onSnapshot, orderBy, limit, writeBatch, doc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
+import { collection, addDoc, query, where, onSnapshot, orderBy, limit, writeBatch, doc, updateDoc, deleteDoc, setDoc } from '../lib/db/firestoreCompat';
 import { db, auth } from '../firebase';
 import { Project, ChatMessage, Suggestion, Session, Feature } from '../types';
 import { generateSuggestions, generateFeatureDetails } from '../services/geminiService';
