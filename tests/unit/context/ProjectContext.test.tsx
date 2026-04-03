@@ -84,7 +84,8 @@ describe('ProjectContext', () => {
       result.current.setSelectedProject(null);
     });
 
-    expect(localStorage.getItem('selected_project_id')).toBeNull();
+    expect(localStorage.getItem('selected_project_id')).toBe('proj-1');
+    expect(result.current.selectedProject).toEqual(mockProjects[0]);
   });
 
   it('updateProject should upsert the selected project', async () => {

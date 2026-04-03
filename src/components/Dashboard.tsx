@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, Folder, Clock, ChevronRight, Trash2, Loader2, Search, Filter, Star, Archive, ExternalLink, X, AlertCircle, Check } from 'lucide-react';
-import { collection, addDoc, doc, updateDoc, deleteDoc, where } from '../lib/db/supabaseData';
+import { collection, addDoc, doc, updateDoc, deleteDoc } from '../lib/db/supabaseData';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
 import { db, auth } from '../lib/supabase/appClient';
 import { Project } from '../types';
@@ -16,11 +16,14 @@ interface DashboardProps {
   onSelectProject: (project: Project) => void;
 }
 
+/**
+ * Renders the accessible project list and project creation flow.
+ */
 export default function Dashboard({ onSelectProject }: DashboardProps) {
   const { user } = useAuth();
   const { data: projects, loading, error, add, update, remove } = useSupabaseCollection<Project>(
-    user ? 'projects' : null, 
-    user ? [where('ownerId', '==', user.uid)] : []
+    user ? 'projects' : null,
+    []
   );
 
   const [isCreating, setIsCreating] = useState(false);

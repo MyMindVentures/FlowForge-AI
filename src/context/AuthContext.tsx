@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
+import type { AuthChangeEvent, Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { doc, updateDoc, onSnapshot } from '../lib/db/supabaseData';
 import {
   auth,
   clearAuthRecoveryParams,
   db,
   getInitialSession,
+  getRolePermissions,
   getSupportedAuthProviders,
   isPasswordRecoveryCallback,
   listDefaultLoginProfiles,
@@ -41,6 +42,7 @@ interface AuthContextType {
   authError: string | null;
   authNotice: string | null;
   isPasswordRecovery: boolean;
+  permissions: string[];
   availableProviders: AuthProviderDescriptor[];
   defaultLoginProfiles: DefaultLoginProfile[];
   login: () => Promise<void>;
@@ -52,6 +54,7 @@ interface AuthContextType {
   verifyOneTimeCode: (email: string, token: string) => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
   completePasswordRecovery: (password: string) => Promise<void>;
+  hasPermission: (permission: string) => boolean;
   logout: () => Promise<void>;
   logoutAllSessions: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
@@ -60,6 +63,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * Provides authenticated user state, profile state, and auth actions to the app tree.
+ */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthenticatedUser | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -67,6 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authError, setAuthError] = useState<string | null>(null);
   const [authNotice, setAuthNotice] = useState<string | null>(null);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+  const [permissions, setPermissions] = useState<string[]>([]);
   const [defaultLoginProfiles, setDefaultLoginProfiles] = useState<DefaultLoginProfile[]>([]);
   const availableProviders = getSupportedAuthProviders();
   const lastAuditedSignInRef = useRef<string | null>(null);
@@ -142,8 +149,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const applySessionUser = async (
       sessionUser: SupabaseUser | null,
-      session: import('@supabase/supabase-js').Session | null,
-      event: import('@supabase/supabase-js').AuthChangeEvent = 'INITIAL_SESSION'
+      session: Session | null,
+      event: AuthChangeEvent = 'INITIAL_SESSION'
     ) => {
       if (unsubscribeProfile) {
         unsubscribeProfile();
@@ -151,6 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setAuthError(null);
+
       if (event === 'PASSWORD_RECOVERY' || isPasswordRecoveryCallback()) {
         setIsPasswordRecovery(true);
         setAuthNotice('Enter a new password to finish resetting your account.');
@@ -158,6 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!sessionUser) {
         lastAuditedSignInRef.current = null;
+        setPermissions([]);
         setIsPasswordRecovery(false);
         setUser(null);
         setProfile(null);
@@ -177,6 +186,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         setUser(authUser);
         setProfile(ensuredProfile);
+        setPermissions(await getRolePermissions(ensuredProfile.role));
         setAuthNotice(null);
 
         const signInAuditKey = `${sessionUser.id}:${sessionUser.last_sign_in_at || ''}`;
@@ -400,6 +410,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const hasPermission = (permission: string) => permissions.includes(permission);
+
   const logout = async () => {
     setAuthError(null);
     setAuthNotice(null);
@@ -444,6 +456,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         authError,
         authNotice,
         isPasswordRecovery,
+        permissions,
         availableProviders,
         defaultLoginProfiles,
         login,
@@ -455,6 +468,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         verifyOneTimeCode: confirmOneTimeCode,
         requestPasswordReset: sendPasswordResetLink,
         completePasswordRecovery,
+        hasPermission,
         logout,
         logoutAllSessions,
         updateProfile,
@@ -466,6 +480,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Returns the active auth context for the current React tree.
+ */
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {

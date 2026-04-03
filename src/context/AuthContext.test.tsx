@@ -1,71 +1,95 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider, useAuth } from './AuthContext';
 
-const getInitialSessionMock = vi.fn();
-const listDefaultLoginProfilesMock = vi.fn();
-const onAuthSessionChangeMock = vi.fn();
-const signInWithPasswordMock = vi.fn();
-const requestPasswordResetMock = vi.fn();
-const updatePasswordMock = vi.fn();
-const setCurrentUserMock = vi.fn();
-const clearAuthRecoveryParamsMock = vi.fn();
-const ensureUserProfileMock = vi.fn();
-const syncAuthSessionRecordMock = vi.fn();
-const revokeAllAuthDeviceSessionsMock = vi.fn();
-const auditLogMock = vi.fn();
-const docMock = vi.fn(() => ({ path: 'users/user-1' }));
-const onSnapshotMock = vi.fn((_ref, onNext) => {
-  onNext({
-    exists: () => true,
-    data: () => ({
-      email: 'hello@mymindventures.io',
-      displayName: 'Kevin De Vlieger',
-      photoURL: null,
-      role: 'Admin',
-      onboarded: true,
-      storytellingCompleted: true,
-    }),
-  });
-  return vi.fn();
-});
+const authContextMocks = vi.hoisted(() => ({
+  getInitialSessionMock: vi.fn(),
+  listDefaultLoginProfilesMock: vi.fn(),
+  onAuthSessionChangeMock: vi.fn(),
+  getRolePermissionsMock: vi.fn(),
+  signInWithPasswordMock: vi.fn(),
+  requestPasswordResetMock: vi.fn(),
+  updatePasswordMock: vi.fn(),
+  setCurrentUserMock: vi.fn(),
+  clearAuthRecoveryParamsMock: vi.fn(),
+  ensureUserProfileMock: vi.fn(),
+  syncAuthSessionRecordMock: vi.fn(),
+  revokeAllAuthDeviceSessionsMock: vi.fn(),
+  auditLogMock: vi.fn(),
+  docMock: vi.fn(() => ({ path: 'users/user-1' })),
+  onSnapshotMock: vi.fn((_ref, onNext) => {
+    onNext({
+      exists: () => true,
+      data: () => ({
+        email: 'hello@mymindventures.io',
+        displayName: 'Kevin De Vlieger',
+        photoURL: null,
+        role: 'Admin',
+        onboarded: true,
+        storytellingCompleted: true,
+      }),
+    });
+    return vi.fn();
+  }),
+}));
+
+const {
+  getInitialSessionMock,
+  listDefaultLoginProfilesMock,
+  onAuthSessionChangeMock,
+  getRolePermissionsMock,
+  signInWithPasswordMock,
+  requestPasswordResetMock,
+  updatePasswordMock,
+  setCurrentUserMock,
+  clearAuthRecoveryParamsMock,
+  ensureUserProfileMock,
+  syncAuthSessionRecordMock,
+  revokeAllAuthDeviceSessionsMock,
+  auditLogMock,
+  docMock,
+  onSnapshotMock,
+} = authContextMocks;
+
+let authSessionChangeCallback: ((sessionUser: any, session: any, event: any) => Promise<void> | void) | null = null;
 
 vi.mock('../lib/supabase/appClient', () => ({
   auth: { currentUser: null },
   db: { provider: 'supabase' },
-  getInitialSession: getInitialSessionMock,
+  getInitialSession: authContextMocks.getInitialSessionMock,
+  getRolePermissions: authContextMocks.getRolePermissionsMock,
   getSupportedAuthProviders: vi.fn(() => []),
-  listDefaultLoginProfiles: listDefaultLoginProfilesMock,
-  onAuthSessionChange: onAuthSessionChangeMock,
+  listDefaultLoginProfiles: authContextMocks.listDefaultLoginProfilesMock,
+  onAuthSessionChange: authContextMocks.onAuthSessionChangeMock,
   requestEmailOneTimeCode: vi.fn(),
   requestMagicLink: vi.fn(),
-  requestPasswordReset: requestPasswordResetMock,
-  setCurrentUser: setCurrentUserMock,
+  requestPasswordReset: authContextMocks.requestPasswordResetMock,
+  setCurrentUser: authContextMocks.setCurrentUserMock,
   signInWithEnterpriseSso: vi.fn(),
   signInWithGoogle: vi.fn(),
-  signInWithPassword: signInWithPasswordMock,
+  signInWithPassword: authContextMocks.signInWithPasswordMock,
   signInWithProvider: vi.fn(),
   signOutCurrentUser: vi.fn(),
-  updatePassword: updatePasswordMock,
+  updatePassword: authContextMocks.updatePasswordMock,
   verifyEmailOneTimeCode: vi.fn(),
   isPasswordRecoveryCallback: vi.fn(() => false),
-  clearAuthRecoveryParams: clearAuthRecoveryParamsMock,
+  clearAuthRecoveryParams: authContextMocks.clearAuthRecoveryParamsMock,
 }));
 
 vi.mock('../lib/auth/sessionRegistry', () => ({
-  revokeAllAuthDeviceSessions: revokeAllAuthDeviceSessionsMock,
-  syncAuthSessionRecord: syncAuthSessionRecordMock,
+  revokeAllAuthDeviceSessions: authContextMocks.revokeAllAuthDeviceSessionsMock,
+  syncAuthSessionRecord: authContextMocks.syncAuthSessionRecordMock,
 }));
 
 vi.mock('../lib/db/profile', () => ({
-  ensureUserProfile: ensureUserProfileMock,
+  ensureUserProfile: authContextMocks.ensureUserProfileMock,
 }));
 
 vi.mock('../lib/db/supabaseData', () => ({
-  doc: docMock,
+  doc: authContextMocks.docMock,
   updateDoc: vi.fn(),
-  onSnapshot: onSnapshotMock,
+  onSnapshot: authContextMocks.onSnapshotMock,
 }));
 
 vi.mock('../services/audit', () => ({
@@ -81,7 +105,7 @@ vi.mock('../services/audit', () => ({
     AUTH_ENTERPRISE_SSO_INITIATED: 'AUTH_ENTERPRISE_SSO_INITIATED',
   },
   AuditService: {
-    log: auditLogMock,
+    log: authContextMocks.auditLogMock,
   },
 }));
 
@@ -109,12 +133,14 @@ function AuthContextHarness() {
 describe('AuthContext', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    authSessionChangeCallback = null;
     getInitialSessionMock.mockResolvedValue(null);
     listDefaultLoginProfilesMock.mockResolvedValue([]);
     onAuthSessionChangeMock.mockImplementation((callback) => {
-      onAuthSessionChangeMock.lastCallback = callback;
+      authSessionChangeCallback = callback;
       return { unsubscribe: vi.fn() };
     });
+    getRolePermissionsMock.mockResolvedValue(['auth.providers.read']);
     signInWithPasswordMock.mockResolvedValue(undefined);
     requestPasswordResetMock.mockResolvedValue(undefined);
     updatePasswordMock.mockResolvedValue(undefined);
@@ -170,7 +196,7 @@ describe('AuthContext', () => {
     await waitFor(() => {
       expect(requestPasswordResetMock).toHaveBeenCalledWith('hello@mymindventures.io');
     });
-    expect(screen.getByTestId('auth-notice')).toHaveTextContent('Password reset instructions were sent to hello@mymindventures.io.');
+    expect(screen.getByTestId('auth-notice')).toHaveTextContent('Password reset instructions were sent to hello@mymindventures.io. Open the email link, then choose a new password in FlowForge.');
   });
 
   it('enters recovery mode and completes the password update', async () => {
@@ -179,6 +205,10 @@ describe('AuthContext', () => {
         <AuthContextHarness />
       </AuthProvider>
     );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('recovery-mode')).toHaveTextContent('no');
+    });
 
     const recoverySession = {
       user: {
@@ -193,13 +223,18 @@ describe('AuthContext', () => {
       access_token: 'header.payload.signature',
     };
 
-    await onAuthSessionChangeMock.lastCallback(recoverySession.user, recoverySession as any, 'PASSWORD_RECOVERY');
+    expect(authSessionChangeCallback).not.toBeNull();
+    await act(async () => {
+      await authSessionChangeCallback?.(recoverySession.user, recoverySession as any, 'PASSWORD_RECOVERY');
+    });
 
     await waitFor(() => {
       expect(screen.getByTestId('recovery-mode')).toHaveTextContent('yes');
     });
 
-    fireEvent.click(screen.getByText('Complete recovery'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Complete recovery'));
+    });
 
     await waitFor(() => {
       expect(updatePasswordMock).toHaveBeenCalledWith('FreshSecret2026');

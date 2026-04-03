@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+
+npm run standards:staged || exit 1
+npm run verify || exit 1

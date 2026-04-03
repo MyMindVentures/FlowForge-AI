@@ -4,6 +4,18 @@ import { MemoryRouter } from 'react-router-dom';
 import Dashboard from './Dashboard';
 import { ToastProvider } from './Toast';
 
+const { useSupabaseCollectionMock } = vi.hoisted(() => ({
+  useSupabaseCollectionMock: vi.fn(() => ({
+    data: [],
+    loading: false,
+    error: null,
+    add: vi.fn(),
+    update: vi.fn(),
+    remove: vi.fn(),
+    syncStatus: 'synced',
+  })),
+}));
+
 // Mock the hooks
 vi.mock('../context/AuthContext', () => ({
   useAuth: () => ({
@@ -18,18 +30,22 @@ vi.mock('../context/AuthContext', () => ({
 }));
 
 vi.mock('../hooks/useSupabaseCollection', () => ({
-  useSupabaseCollection: () => ({
-    data: [],
-    loading: false,
-    error: null,
-    add: vi.fn(),
-    update: vi.fn(),
-    remove: vi.fn(),
-    syncStatus: { status: 'synced' }
-  })
+  useSupabaseCollection: useSupabaseCollectionMock
 }));
 
 describe('Dashboard', () => {
+  it('queries projects without a client-side owner filter', () => {
+    render(
+      <MemoryRouter>
+        <ToastProvider>
+          <Dashboard onSelectProject={vi.fn()} />
+        </ToastProvider>
+      </MemoryRouter>
+    );
+
+    expect(useSupabaseCollectionMock).toHaveBeenCalledWith('projects', []);
+  });
+
   it('renders correctly with no projects', () => {
     render(
       <MemoryRouter>
@@ -41,5 +57,6 @@ describe('Dashboard', () => {
     expect(screen.getByText('No projects found')).toBeInTheDocument();
   });
 });
+
 
 

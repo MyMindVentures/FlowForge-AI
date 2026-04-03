@@ -78,6 +78,19 @@ describe('Auth', () => {
     expect(onPasswordLoginMock).toHaveBeenCalledWith('test@example.com', 'secret-123');
   });
 
+  it('toggles password visibility for sign-in', () => {
+    render(<Auth onLogin={vi.fn()} onPasswordLogin={vi.fn()} />);
+
+    const passwordInput = screen.getByLabelText('Password');
+    expect(passwordInput).toHaveAttribute('type', 'password');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show password' }));
+    expect(passwordInput).toHaveAttribute('type', 'text');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hide password' }));
+    expect(passwordInput).toHaveAttribute('type', 'password');
+  });
+
   it('submits a password reset request', () => {
     const onPasswordResetRequestMock = vi.fn();
     render(<Auth onLogin={vi.fn()} onPasswordResetRequest={onPasswordResetRequestMock} />);
@@ -172,6 +185,22 @@ describe('Auth', () => {
     fireEvent.click(screen.getByText('Update password'));
 
     expect(onPasswordRecoveryCompleteMock).toHaveBeenCalledWith('FlowForge!2026');
+  });
+
+  it('toggles password visibility during recovery', () => {
+    render(
+      <Auth
+        onLogin={vi.fn()}
+        isPasswordRecovery
+        onPasswordRecoveryComplete={vi.fn()}
+      />
+    );
+
+    const passwordInput = screen.getByLabelText('New Password');
+    expect(passwordInput).toHaveAttribute('type', 'password');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show new password' }));
+    expect(passwordInput).toHaveAttribute('type', 'text');
   });
 
   it('shows a local error when recovery passwords do not match', async () => {

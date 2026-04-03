@@ -4,7 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "prepare": "husky",
     "env:check": "node scripts/check-env.mjs",
+    "standards": "node scripts/check-standards.mjs",
+    "standards:staged": "node scripts/check-standards.mjs --staged",
     "predev": "npm run env:check",
     "prebuild": "npm run env:check",
     "dev": "vite --port=3000 --host=0.0.0.0",
@@ -17,6 +20,7 @@
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "verify": "npm run standards && npm run lint && npm run test:run && npm run build",
     "sync:flowforge:product": "tsx scripts/sync-flowforge-product.ts"
   },
   "dependencies": {
@@ -45,6 +49,7 @@
     "@vitest/coverage-v8": "^4.1.2",
     "@vitest/ui": "^4.1.2",
     "autoprefixer": "^10.4.21",
+    "husky": "^9.1.7",
     "jsdom": "^29.0.1",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",

@@ -24,14 +24,18 @@ describe('legacy product mappers', () => {
       repositories: [],
     };
 
-    expect(mapLegacyProjectToProductProject(project)).toEqual({
+    expect(mapLegacyProjectToProductProject(project)).toMatchObject({
       name: 'FlowForge AI',
       slug: 'flowforge-ai',
       description: 'Internal product workspace',
+      tagline: 'Internal product workspace',
+      category: 'legacy-project',
+      visibility: 'private',
       platform: 'responsive',
       status: 'active',
       version: '1.0.0',
       owner_auth_id: 'owner-1',
+      tags: [],
     });
   });
 

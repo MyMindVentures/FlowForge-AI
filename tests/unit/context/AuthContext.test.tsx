@@ -15,7 +15,9 @@ const mockSignOutCurrentUser = vi.fn().mockResolvedValue(undefined);
 const mockSetCurrentUser = vi.fn();
 const mockEnsureUserProfile = vi.fn();
 const mockOnAuthSessionChange = vi.fn();
-const mockGetInitialSessionUser = vi.fn();
+const mockGetInitialSession = vi.fn();
+const mockGetRolePermissions = vi.fn().mockResolvedValue([]);
+const mockIsPasswordRecoveryCallback = vi.fn().mockReturnValue(false);
 const mockGetSupportedAuthProviders = vi.fn().mockReturnValue([
   { id: 'google', label: 'Google', description: 'OAuth2 / OpenID Connect via your Google account.', kind: 'oauth', oauthProvider: 'google' },
   { id: 'github', label: 'GitHub', description: 'OAuth2 via GitHub for engineering teams and maintainers.', kind: 'oauth', oauthProvider: 'github' },
@@ -38,8 +40,11 @@ vi.mock('../../../src/lib/supabase/appClient', () => ({
   db: {},
   supabase: {},
   onAuthSessionChange: (...args: any[]) => mockOnAuthSessionChange(...args),
-  getInitialSessionUser: (...args: any[]) => mockGetInitialSessionUser(...args),
+  getInitialSession: (...args: any[]) => mockGetInitialSession(...args),
+  getRolePermissions: (...args: any[]) => mockGetRolePermissions(...args),
   getSupportedAuthProviders: (...args: any[]) => mockGetSupportedAuthProviders(...args),
+  isPasswordRecoveryCallback: (...args: any[]) => mockIsPasswordRecoveryCallback(...args),
+  clearAuthRecoveryParams: vi.fn(),
   listDefaultLoginProfiles: (...args: any[]) => mockListDefaultLoginProfiles(...args),
   signInWithGoogle: (...args: any[]) => mockSignInWithGoogle(...args),
   signInWithPassword: (...args: any[]) => mockSignInWithPassword(...args),
@@ -68,7 +73,7 @@ describe('AuthContext', () => {
       callback(null);
       return { unsubscribe: vi.fn() };
     });
-    mockGetInitialSessionUser.mockResolvedValue(null);
+    mockGetInitialSession.mockResolvedValue(null);
     mockOnSnapshot.mockImplementation((_ref: unknown, callback: (snapshot: any) => void) => {
       callback({
         exists: () => false,
@@ -111,7 +116,7 @@ describe('AuthContext', () => {
       callback(sessionUser);
       return { unsubscribe: vi.fn() };
     });
-    mockGetInitialSessionUser.mockResolvedValue(sessionUser);
+    mockGetInitialSession.mockResolvedValue({ user: sessionUser });
     mockEnsureUserProfile.mockResolvedValue({
       authUser,
       profile: {
@@ -256,7 +261,7 @@ describe('AuthContext', () => {
       callback(sessionUser);
       return { unsubscribe: vi.fn() };
     });
-    mockGetInitialSessionUser.mockResolvedValue(sessionUser);
+    mockGetInitialSession.mockResolvedValue({ user: sessionUser });
     mockEnsureUserProfile.mockResolvedValue({
       authUser: {
         uid: 'legacy-user-1',

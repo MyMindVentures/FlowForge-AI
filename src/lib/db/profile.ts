@@ -3,6 +3,16 @@ import { getDefaultAdminEmail, mapSupabaseUserToProviderData, setCurrentUser, su
 import type { UserProfile } from '../../types';
 import { mapDbRecordToApp } from './pathMap';
 
+function mapAppUserProfile(record: Record<string, unknown>, fallbackUid: string): UserProfile {
+  const mapped = mapDbRecordToApp<UserProfile & { id?: string }>(record);
+  const recordId = typeof record.id === 'string' ? record.id : fallbackUid;
+
+  return {
+    ...mapped,
+    uid: mapped.uid || recordId,
+  };
+}
+
 function defaultProfile(user: SupabaseUser): UserProfile {
   const isAdmin = (user.email || '').toLowerCase() === getDefaultAdminEmail().toLowerCase();
   const now = new Date().toISOString();
@@ -63,6 +73,9 @@ function toAuthenticatedUser(sessionUser: SupabaseUser, profile: UserProfile): A
   };
 }
 
+/**
+ * Ensures the authenticated Supabase user has a corresponding FlowForge app profile.
+ */
 export async function ensureUserProfile(sessionUser: SupabaseUser) {
   const byAuthUser = await supabase
     .from('app_users')
@@ -112,7 +125,7 @@ export async function ensureUserProfile(sessionUser: SupabaseUser) {
       throw error;
     }
 
-    const profile = mapDbRecordToApp<UserProfile>(data);
+    const profile = mapAppUserProfile(data as Record<string, unknown>, sessionUser.id);
     const authUser = toAuthenticatedUser(sessionUser, profile);
     setCurrentUser(authUser);
     return { profile, authUser };
@@ -152,7 +165,7 @@ export async function ensureUserProfile(sessionUser: SupabaseUser) {
     throw error;
   }
 
-  const profile = mapDbRecordToApp<UserProfile>(data);
+  const profile = mapAppUserProfile(data as Record<string, unknown>, sessionUser.id);
   const authUser = toAuthenticatedUser(sessionUser, profile);
   setCurrentUser(authUser);
   return { profile, authUser };

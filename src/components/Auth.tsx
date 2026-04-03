@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import { ArrowRight, Fingerprint, Github, Globe, KeyRound, LogIn, Mail, Shield, ShieldCheck, Sparkles, Zap } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, Fingerprint, Github, Globe, KeyRound, LogIn, Mail, Shield, ShieldCheck, Sparkles, Zap } from 'lucide-react';
 import type { AuthProviderDescriptor, AuthProviderId, DefaultLoginProfile } from '../lib/supabase/appClient';
 
 interface AuthProps {
@@ -59,6 +59,9 @@ function getProviderIcon(providerId: AuthProviderId) {
   }
 }
 
+/**
+ * Renders the Supabase authentication entry points and recovery flows.
+ */
 export default function Auth({ onLogin, onPasswordLogin, onProviderLogin, onEnterpriseSsoLogin, onMagicLinkLogin, onOneTimeCodeRequest, onOneTimeCodeVerify, onPasswordResetRequest, onPasswordRecoveryComplete, isPasswordRecovery = false, providers = defaultProviders, defaultUsers = [], error, notice }: AuthProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -67,6 +70,9 @@ export default function Auth({ onLogin, onPasswordLogin, onProviderLogin, onEnte
   const [enterpriseIdentifier, setEnterpriseIdentifier] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showRecoveryPassword, setShowRecoveryPassword] = useState(false);
+  const [showRecoveryPasswordConfirmation, setShowRecoveryPasswordConfirmation] = useState(false);
 
   const oauthProviders = useMemo(() => providers.filter((provider) => provider.kind === 'oauth'), [providers]);
   const enterpriseProviders = useMemo(() => providers.filter((provider) => provider.kind === 'sso'), [providers]);
@@ -349,27 +355,47 @@ export default function Auth({ onLogin, onPasswordLogin, onProviderLogin, onEnte
                   <label className="block text-xs font-bold uppercase tracking-[0.25em] text-gray-500" htmlFor="auth-recovery-password">
                     New Password
                   </label>
-                  <input
-                    id="auth-recovery-password"
-                    type="password"
-                    autoComplete="new-password"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    placeholder="Choose a new password"
-                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-rose-400"
-                  />
+                  <div className="relative">
+                    <input
+                      id="auth-recovery-password"
+                      type={showRecoveryPassword ? 'text' : 'password'}
+                      autoComplete="new-password"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      placeholder="Choose a new password"
+                      className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 pr-12 text-white outline-none transition focus:border-rose-400"
+                    />
+                    <button
+                      type="button"
+                      aria-label={showRecoveryPassword ? 'Hide new password' : 'Show new password'}
+                      onClick={() => setShowRecoveryPassword((current) => !current)}
+                      className="absolute inset-y-0 right-3 my-auto text-gray-400 transition hover:text-white"
+                    >
+                      {showRecoveryPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                   <label className="block text-xs font-bold uppercase tracking-[0.25em] text-gray-500" htmlFor="auth-recovery-password-confirmation">
                     Confirm Password
                   </label>
-                  <input
-                    id="auth-recovery-password-confirmation"
-                    type="password"
-                    autoComplete="new-password"
-                    value={passwordConfirmation}
-                    onChange={(event) => setPasswordConfirmation(event.target.value)}
-                    placeholder="Repeat the new password"
-                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-rose-400"
-                  />
+                  <div className="relative">
+                    <input
+                      id="auth-recovery-password-confirmation"
+                      type={showRecoveryPasswordConfirmation ? 'text' : 'password'}
+                      autoComplete="new-password"
+                      value={passwordConfirmation}
+                      onChange={(event) => setPasswordConfirmation(event.target.value)}
+                      placeholder="Repeat the new password"
+                      className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 pr-12 text-white outline-none transition focus:border-rose-400"
+                    />
+                    <button
+                      type="button"
+                      aria-label={showRecoveryPasswordConfirmation ? 'Hide confirmation password' : 'Show confirmation password'}
+                      onClick={() => setShowRecoveryPasswordConfirmation((current) => !current)}
+                      className="absolute inset-y-0 right-3 my-auto text-gray-400 transition hover:text-white"
+                    >
+                      {showRecoveryPasswordConfirmation ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                   <button
                     type="submit"
                     disabled={Boolean(pendingAction)}
@@ -385,7 +411,7 @@ export default function Auth({ onLogin, onPasswordLogin, onProviderLogin, onEnte
             {defaultUsers.length ? (
               <>
                 <p className="text-xs font-bold uppercase tracking-[0.3em] text-amber-300">Default Users</p>
-                <p className="mt-3 text-sm leading-6 text-gray-400">Pick Kevin or Loli to preload the correct email, then enter the current shared admin password.</p>
+                <p className="mt-3 text-sm leading-6 text-gray-400">Pick Kevin or Loli to preload the correct email, then enter the seeded password.</p>
 
                 <div className="mt-6 grid gap-3 sm:grid-cols-2">
                   {defaultUsers.map((defaultUser) => {
@@ -411,7 +437,7 @@ export default function Auth({ onLogin, onPasswordLogin, onProviderLogin, onEnte
             ) : null}
 
             <p className="text-xs font-bold uppercase tracking-[0.3em] text-sky-300">Email And Password</p>
-            <p className="mt-3 text-sm leading-6 text-gray-400">Use the current shared admin password or your own Supabase password when direct sign-in is enabled for your account. Email verification and reset links stay in the same Supabase flow.</p>
+            <p className="mt-3 text-sm leading-6 text-gray-400">Use the shared admin password or your own Supabase password when direct sign-in is enabled for your account. Email verification and reset links stay in the same Supabase flow.</p>
 
             <form className="mt-6 space-y-3" onSubmit={handlePasswordLogin}>
               <label className="block text-xs font-bold uppercase tracking-[0.25em] text-gray-500" htmlFor="auth-email">
@@ -429,15 +455,25 @@ export default function Auth({ onLogin, onPasswordLogin, onProviderLogin, onEnte
               <label className="block text-xs font-bold uppercase tracking-[0.25em] text-gray-500" htmlFor="auth-email-password">
                 Password
               </label>
-              <input
-                id="auth-email-password"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="Enter your password"
-                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-sky-400"
-              />
+              <div className="relative">
+                <input
+                  id="auth-email-password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="Enter your password"
+                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 pr-12 text-white outline-none transition focus:border-sky-400"
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  onClick={() => setShowPassword((current) => !current)}
+                  className="absolute inset-y-0 right-3 my-auto text-gray-400 transition hover:text-white"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
               <button
                 type="submit"
                 disabled={Boolean(pendingAction)}

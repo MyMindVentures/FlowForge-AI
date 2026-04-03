@@ -35,15 +35,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Typecheck
-        run: npm run lint
-
-      - name: Run full test suite
-        continue-on-error: true
-        run: npm run test:run
-
-      - name: Build app
-        run: npm run build
+      - name: Standards, typecheck, test, and build
+        run: npm run verify
 
       - name: Upload dist artifact
         if: github.ref == 'refs/heads/main'

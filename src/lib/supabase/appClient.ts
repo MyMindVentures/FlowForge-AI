@@ -8,6 +8,7 @@ import {
   type AuthProviderId,
   type OAuthProviderId,
 } from '../auth/providers';
+import type { UserRole } from '../../types';
 
 type ProviderInfo = {
   providerId: string;
@@ -49,6 +50,9 @@ const supabasePublishableKey =
 
 const missingSupabaseConfigMessage = 'Supabase environment variables are missing. Set VITE_SUPABASE_URL and either VITE_SUPABASE_ANON_KEY, VITE_SUPABASE_PUBLISHABLE_KEY, or VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY.';
 
+/**
+ * Returns whether the client has enough environment configuration to initialize Supabase.
+ */
 export function isSupabaseConfigured() {
   return Boolean(supabaseUrl && supabasePublishableKey);
 }
@@ -102,14 +106,23 @@ function getAuthRedirectUrl(path = '/') {
   return new URL(path, baseUrl).toString();
 }
 
+/**
+ * Stores the current authenticated app user for non-React helpers.
+ */
 export function setCurrentUser(user: AuthenticatedUser | null) {
   currentUser = user;
 }
 
+/**
+ * Returns the configured admin email used for bootstrap and fallback logic.
+ */
 export function getDefaultAdminEmail() {
   return import.meta.env.VITE_SUPABASE_ADMIN_EMAIL || 'lacometta33@gmail.com';
 }
 
+/**
+ * Maps Supabase identity records into the app's provider metadata shape.
+ */
 export function mapSupabaseUserToProviderData(user: SupabaseUser): ProviderInfo[] {
   const identities = user.identities || [];
   if (!identities.length) {
@@ -127,10 +140,35 @@ export function mapSupabaseUserToProviderData(user: SupabaseUser): ProviderInfo[
   }));
 }
 
+/**
+ * Returns the enabled authentication providers for the current deployment.
+ */
 export function getSupportedAuthProviders(): AuthProviderDescriptor[] {
   return getAuthProviderCatalog();
 }
 
+/**
+ * Loads the permission keys associated with an application role.
+ */
+export async function getRolePermissions(role: UserRole): Promise<string[]> {
+  if (!supabase) {
+    return [];
+  }
+
+  const { data, error } = await supabase.rpc('get_role_permissions', {
+    target_role: role,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return Array.isArray(data) ? data : [];
+}
+
+/**
+ * Detects whether the current browser URL represents a password recovery flow.
+ */
 export function isPasswordRecoveryCallback() {
   if (typeof window === 'undefined') {
     return false;
@@ -141,6 +179,9 @@ export function isPasswordRecoveryCallback() {
   return hashParams.get('type') === 'recovery' || searchParams.get('type') === 'recovery';
 }
 
+/**
+ * Removes password recovery markers from the current browser URL.
+ */
 export function clearAuthRecoveryParams() {
   if (typeof window === 'undefined') {
     return;
@@ -152,6 +193,9 @@ export function clearAuthRecoveryParams() {
   window.history.replaceState({}, document.title, url.toString());
 }
 
+/**
+ * Returns the current Supabase auth session.
+ */
 export async function getInitialSession() {
   requireSupabaseConfig();
   const { data, error } = await supabase!.auth.getSession();
@@ -162,6 +206,9 @@ export async function getInitialSession() {
   return data.session;
 }
 
+/**
+ * Lists enabled default login profiles for the auth screen.
+ */
 export async function listDefaultLoginProfiles(): Promise<DefaultLoginProfile[]> {
   if (!supabase) {
     return [];
@@ -215,6 +262,9 @@ async function requestDevelopmentEmailOtp(email: string) {
   return payload as { emailOtp?: string | null };
 }
 
+/**
+ * Starts an OAuth sign-in flow for a specific provider.
+ */
 export async function signInWithOAuthProvider(provider: OAuthProviderId) {
   requireSupabaseConfig();
   const redirectTo = getAuthRedirectUrl();
@@ -228,10 +278,16 @@ export async function signInWithOAuthProvider(provider: OAuthProviderId) {
   }
 }
 
+/**
+ * Starts Google OAuth sign-in.
+ */
 export async function signInWithGoogle() {
   await signInWithOAuthProvider('google');
 }
 
+/**
+ * Starts sign-in for a supported provider identifier.
+ */
 export async function signInWithProvider(providerId: AuthProviderId) {
   const oauthProvider = getOAuthProvider(providerId);
   if (!oauthProvider || !isOAuthProviderId(oauthProvider)) {
@@ -241,6 +297,9 @@ export async function signInWithProvider(providerId: AuthProviderId) {
   await signInWithOAuthProvider(oauthProvider);
 }
 
+/**
+ * Signs a user in with an email and password.
+ */
 export async function signInWithPassword(email: string, password: string) {
   requireSupabaseConfig();
 
@@ -254,6 +313,9 @@ export async function signInWithPassword(email: string, password: string) {
   }
 }
 
+/**
+ * Starts enterprise SSO based on a work email or company domain.
+ */
 export async function signInWithEnterpriseSso(identifier: string) {
   requireSupabaseConfig();
 
@@ -277,6 +339,9 @@ export async function signInWithEnterpriseSso(identifier: string) {
   }
 }
 
+/**
+ * Sends a passwordless magic link to the provided email address.
+ */
 export async function requestMagicLink(email: string) {
   requireSupabaseConfig();
   const redirectTo = getAuthRedirectUrl();
@@ -296,6 +361,9 @@ export async function requestMagicLink(email: string) {
   }
 }
 
+/**
+ * Requests a one-time email code, using the dev helper when available.
+ */
 export async function requestEmailOneTimeCode(email: string) {
   requireSupabaseConfig();
 
@@ -325,6 +393,9 @@ export async function requestEmailOneTimeCode(email: string) {
   return { emailOtp: null };
 }
 
+/**
+ * Sends a password reset email using the configured recovery route.
+ */
 export async function requestPasswordReset(email: string) {
   requireSupabaseConfig();
   const redirectTo = getAuthRedirectUrl('/auth/recovery');
@@ -335,6 +406,9 @@ export async function requestPasswordReset(email: string) {
   }
 }
 
+/**
+ * Updates the current authenticated user's password.
+ */
 export async function updatePassword(password: string) {
   requireSupabaseConfig();
 
@@ -345,6 +419,9 @@ export async function updatePassword(password: string) {
   }
 }
 
+/**
+ * Verifies an emailed one-time code and completes sign-in.
+ */
 export async function verifyEmailOneTimeCode(email: string, token: string) {
   requireSupabaseConfig();
 
@@ -363,6 +440,9 @@ export async function verifyEmailOneTimeCode(email: string, token: string) {
   }
 }
 
+/**
+ * Signs the current user out using the requested Supabase scope.
+ */
 export async function signOutCurrentUser(scope: 'local' | 'global' | 'others' = 'local') {
   requireSupabaseConfig();
   const { error } = await supabase!.auth.signOut({ scope });
@@ -372,6 +452,9 @@ export async function signOutCurrentUser(scope: 'local' | 'global' | 'others' = 
   setCurrentUser(null);
 }
 
+/**
+ * Subscribes to Supabase auth session changes.
+ */
 export function onAuthSessionChange(callback: (sessionUser: SupabaseUser | null, session: Session | null, event: AuthChangeEvent) => void) {
   if (!supabase) {
     callback(null, null, 'INITIAL_SESSION');
@@ -387,6 +470,9 @@ export function onAuthSessionChange(callback: (sessionUser: SupabaseUser | null,
   return data.subscription;
 }
 
+/**
+ * Returns the current session user when one is available.
+ */
 export async function getInitialSessionUser() {
   const session = await getInitialSession();
   return session?.user ?? null;

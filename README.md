@@ -21,42 +21,6 @@ FlowForge AI now runs on Supabase for database access, realtime data, and auth i
 11. Apply [supabase/migrations/20260403_007_auth_pwa_foundation.sql](supabase/migrations/20260403_007_auth_pwa_foundation.sql) to add provider metadata, feature flags, session registry tables, RBAC permissions, and seeded FlowForge feature cards for auth modernization and tablet PWA rollout.
 11. Start the app with `npm run dev`.
 
-## CI/CD
-
-- GitHub Actions CI is defined in [.github/workflows/ci.yml](.github/workflows/ci.yml). It runs `npm ci`, `npm run lint`, `npm run test:run`, and `npm run build` on pushes to `main` and all pull requests.
-- Cloud Run deployment is defined in [.github/workflows/deploy-cloud-run.yml](.github/workflows/deploy-cloud-run.yml). It builds the production container with the Vite frontend env vars baked at build time, pushes the image to Google Container Registry, and deploys it to Cloud Run.
-- The production container serves the Vite `dist` output through [server.mjs](server.mjs) and exposes `GET /healthz` for Cloud Run health checks.
-
-### Required GitHub configuration
-
-Repository secrets:
-
-- `GCP_WORKLOAD_IDENTITY_PROVIDER`
-- `GCP_SERVICE_ACCOUNT`
-- `VITE_SUPABASE_ANON_KEY`
-
-Repository variables:
-
-- `GCP_PROJECT_ID`
-- `GCP_REGION`
-- `CLOUD_RUN_SERVICE`
-- `VITE_SUPABASE_URL`
-- `VITE_AUTH_REDIRECT_URL`
-- `VITE_SUPABASE_PUBLISHABLE_KEY` or `VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY`
-- Optional feature flags: `VITE_SUPABASE_EMAIL_OTP_ENABLED`, `VITE_SUPABASE_APPLE_OAUTH_ENABLED`, `VITE_SUPABASE_ENTERPRISE_SSO_ENABLED`, `VITE_SUPABASE_PASSKEYS_ENABLED`, `VITE_SUPABASE_TOTP_MFA_ENABLED`, `VITE_SUPABASE_SMS_MFA_FALLBACK_ENABLED`
-
-### Local container smoke test
-
-```bash
-docker build \
-	--build-arg VITE_SUPABASE_URL=https://example.supabase.co \
-	--build-arg VITE_SUPABASE_ANON_KEY=test-anon-key \
-	--build-arg VITE_AUTH_REDIRECT_URL=https://example.com/auth/callback \
-	-t flowforge-ai:local .
-
-docker run --rm -p 8080:8080 flowforge-ai:local
-```
-
 ## Authentication status
 
 - Implemented in the SPA layer: provider registry, Google/GitHub/Microsoft/Apple OAuth initiation, enterprise SSO initiation by work domain, password reset, passwordless magic-link requests, passwordless email code requests, email code verification, user-facing fallback states, device session inventory, trusted-device controls, and logout-all.

@@ -4,6 +4,7 @@ const signInWithPasswordMock = vi.fn();
 const resetPasswordForEmailMock = vi.fn();
 const updateUserMock = vi.fn();
 const onAuthStateChangeMock = vi.fn();
+const rpcMock = vi.fn();
 
 vi.mock('@supabase/supabase-js', () => ({
   createClient: vi.fn(() => ({
@@ -13,6 +14,7 @@ vi.mock('@supabase/supabase-js', () => ({
       updateUser: updateUserMock,
       onAuthStateChange: onAuthStateChangeMock,
     },
+    rpc: rpcMock,
     from: vi.fn(),
   })),
 }));
@@ -35,6 +37,7 @@ describe('appClient auth helpers', () => {
     signInWithPasswordMock.mockResolvedValue({ error: null });
     resetPasswordForEmailMock.mockResolvedValue({ error: null });
     updateUserMock.mockResolvedValue({ error: null });
+    rpcMock.mockResolvedValue({ data: ['auth.providers.read'], error: null });
     onAuthStateChangeMock.mockReturnValue({
       data: {
         subscription: {
@@ -80,5 +83,14 @@ describe('appClient auth helpers', () => {
     const module = await import('./appClient');
 
     expect(module.isPasswordRecoveryCallback()).toBe(true);
+  });
+
+  it('loads role permissions through the Supabase RPC helper', async () => {
+    const module = await import('./appClient');
+
+    await expect(module.getRolePermissions('Admin')).resolves.toEqual(['auth.providers.read']);
+    expect(rpcMock).toHaveBeenCalledWith('get_role_permissions', {
+      target_role: 'Admin',
+    });
   });
 });

@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { Project, Feature, Version, UIPage, UIComponent, UILayout, UIStyleSystem, PRDSection, AuditFinding, ReadinessCheck, Blocker, Task, LLMFunction } from '../types';
 import { useSupabaseCollection } from '../hooks/useSupabaseCollection';
 import { useAuth } from './AuthContext';
-import { where } from '../lib/db/supabaseData';
 import { SyncService } from '../services/SyncService';
 import { seedProductionTasksForProject } from '../lib/tasklist/productionTasks';
 
@@ -55,6 +54,9 @@ interface ProjectContextType {
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
 
+/**
+ * Provides project state and project-scoped collections for the active user.
+ */
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const { user, profile } = useAuth();
   const isAdmin = profile?.role === 'Admin' || profile?.email === 'lacometta33@gmail.com';
@@ -63,8 +65,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   });
 
   const { data: projects, loading: projectsLoading, add: addProjectDoc, update: updateProjectDoc, set: setProjectDoc } = useSupabaseCollection<Project>(
-    user ? 'projects' : null, 
-    user ? (isAdmin ? [] : [where('ownerId', '==', user.uid)]) : []
+    user ? 'projects' : null,
+    []
   );
 
   const creatingSystemProject = useRef(false);
@@ -124,6 +126,32 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       }
     }
   }, [selectedProjectId, isAdmin, projects, sortedProjects]);
+
+  // Recover from stale localStorage or first-load states for any user.
+  useEffect(() => {
+    if (projectsLoading || sortedProjects.length === 0) {
+      return;
+    }
+
+    const selectedStillAccessible = selectedProjectId
+      ? sortedProjects.some((project) => project.id === selectedProjectId)
+      : false;
+
+    if (selectedStillAccessible) {
+      return;
+    }
+
+    const fallbackProject = isAdmin
+      ? sortedProjects.find((project) => project.name === 'FlowForge AI') || sortedProjects[0]
+      : sortedProjects[0];
+
+    if (!fallbackProject) {
+      return;
+    }
+
+    setSelectedProjectId(fallbackProject.id);
+    localStorage.setItem('selected_project_id', fallbackProject.id);
+  }, [projectsLoading, selectedProjectId, sortedProjects, isAdmin]);
 
   const selectedProject = sortedProjects.find(p => p.id === selectedProjectId) || null;
 
@@ -488,6 +516,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Returns the active project context.
+ */
 export function useProject() {
   const context = useContext(ProjectContext);
   if (context === undefined) {
