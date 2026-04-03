@@ -271,7 +271,7 @@ function LoadingScreen() {
 // --- Main App Routes ---
 
 function AppRoutes() {
-  const { user, profile, login, logout, setRole, updateProfile, loading } = useAuth();
+  const { user, profile, login, logout, setRole, updateProfile, loading, authError } = useAuth();
   const { selectedProject, setSelectedProject, updateProject, features, versions, syncStatus } = useProject();
   const [showSplash, setShowSplash] = useState(true);
   const navigate = useNavigate();
@@ -285,7 +285,7 @@ function AppRoutes() {
   }
 
   if (!user) {
-    return <Auth onLogin={login} />;
+    return <Auth onLogin={login} error={authError} />;
   }
 
   const isAdmin = profile?.role === 'Admin' || profile?.email === 'lacometta33@gmail.com';

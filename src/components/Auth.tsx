@@ -4,9 +4,10 @@ import { Sparkles, LogIn, Shield, Zap, Globe, ArrowRight } from 'lucide-react';
 
 interface AuthProps {
   onLogin: () => void;
+  error?: string | null;
 }
 
-export default function Auth({ onLogin }: AuthProps) {
+export default function Auth({ onLogin, error }: AuthProps) {
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-6 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-900/20 via-[#0a0a0a] to-[#0a0a0a] overflow-hidden relative">
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] opacity-20" />
@@ -58,6 +59,13 @@ export default function Auth({ onLogin }: AuthProps) {
           Sign in with Google
           <ArrowRight className="ml-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" size={20} />
         </button>
+
+        {error ? (
+          <div className="mt-6 max-w-2xl rounded-2xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 text-left">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-300">Google Sign-In Error</p>
+            <p className="mt-2 text-sm leading-6 text-amber-100">{error}</p>
+          </div>
+        ) : null}
       </motion.div>
 
       <div className="absolute bottom-12 left-0 right-0 text-center opacity-40">
