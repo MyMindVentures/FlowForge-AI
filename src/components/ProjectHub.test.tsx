@@ -23,6 +23,7 @@ describe('ProjectHub', () => {
       user: { uid: 'user1', email: 'test@test.com', role: 'Architect' } as any,
       profile: { role: 'Architect', onboarded: true } as any,
       loading: false,
+      authError: null,
       login: vi.fn(),
       logout: vi.fn(),
       updateProfile: vi.fn(),

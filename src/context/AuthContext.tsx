@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthStateChanged, User, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { FirebaseError } from 'firebase/app';
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { UserProfile, UserRole } from '../types';
@@ -8,6 +9,7 @@ interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
   loading: boolean;
+  authError: string | null;
   login: () => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
@@ -20,10 +22,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  const getAuthErrorMessage = (error: unknown) => {
+    if (error instanceof FirebaseError) {
+      switch (error.code) {
+        case 'auth/unauthorized-domain':
+          return 'Google sign-in is blocked for this app URL. Add localhost, 127.0.0.1, and any active dev hostnames to Firebase Authentication > Settings > Authorized domains.';
+        case 'auth/popup-blocked':
+          return 'The Google sign-in popup was blocked by the browser. Allow popups for this site and try again.';
+        case 'auth/popup-closed-by-user':
+          return 'The Google sign-in popup was closed before authentication completed.';
+        case 'auth/cancelled-popup-request':
+          return null;
+        default:
+          return error.message;
+      }
+    }
+
+    if (error instanceof Error) {
+      return error.message;
+    }
+
+    return 'Google sign-in failed. Check the browser console and Firebase Authentication settings.';
+  };
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
+      setAuthError(null);
       
       if (firebaseUser) {
         // Fetch or create profile
@@ -83,10 +110,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async () => {
     const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    provider.setCustomParameters({ prompt: 'select_account' });
+
+    try {
+      setAuthError(null);
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      setAuthError(getAuthErrorMessage(error));
+    }
   };
 
   const logout = async () => {
+    setAuthError(null);
     await signOut(auth);
   };
 
@@ -104,7 +139,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, login, logout, updateProfile, setRole }}>
+    <AuthContext.Provider value={{ user, profile, loading, authError, login, logout, updateProfile, setRole }}>
       {children}
     </AuthContext.Provider>
   );

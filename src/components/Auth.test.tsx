@@ -20,4 +20,11 @@ describe('Auth', () => {
     
     expect(onLoginMock).toHaveBeenCalledTimes(1);
   });
+
+      it('renders auth error details when provided', () => {
+        render(<Auth onLogin={vi.fn()} error="Google sign-in is blocked for this app URL." />);
+
+        expect(screen.getByText('Google Sign-In Error')).toBeInTheDocument();
+        expect(screen.getByText('Google sign-in is blocked for this app URL.')).toBeInTheDocument();
+      });
 });
