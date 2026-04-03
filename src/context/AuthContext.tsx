@@ -3,9 +3,11 @@ import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { doc, updateDoc, onSnapshot } from '../lib/db/supabaseData';
 import {
   auth,
+  clearAuthRecoveryParams,
   db,
   getInitialSession,
   getSupportedAuthProviders,
+  isPasswordRecoveryCallback,
   listDefaultLoginProfiles,
   onAuthSessionChange,
   requestEmailOneTimeCode,
@@ -17,6 +19,7 @@ import {
   signInWithPassword,
   signInWithProvider,
   signOutCurrentUser,
+  updatePassword,
   verifyEmailOneTimeCode,
   type AuthenticatedUser,
   type AuthProviderDescriptor,
@@ -37,6 +40,7 @@ interface AuthContextType {
   loading: boolean;
   authError: string | null;
   authNotice: string | null;
+  isPasswordRecovery: boolean;
   availableProviders: AuthProviderDescriptor[];
   defaultLoginProfiles: DefaultLoginProfile[];
   login: () => Promise<void>;
@@ -47,6 +51,7 @@ interface AuthContextType {
   requestOneTimeCode: (email: string) => Promise<void>;
   verifyOneTimeCode: (email: string, token: string) => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
+  completePasswordRecovery: (password: string) => Promise<void>;
   logout: () => Promise<void>;
   logoutAllSessions: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
@@ -61,6 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authNotice, setAuthNotice] = useState<string | null>(null);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
   const [defaultLoginProfiles, setDefaultLoginProfiles] = useState<DefaultLoginProfile[]>([]);
   const availableProviders = getSupportedAuthProviders();
   const lastAuditedSignInRef = useRef<string | null>(null);
@@ -81,6 +87,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error.message.includes('Invalid login credentials')) {
         return 'Invalid email or password.';
+      }
+
+      if (error.message.includes('Password should be at least')) {
+        return error.message;
       }
 
       if (error.message.includes('SAML') || error.message.includes('SSO')) {
@@ -130,16 +140,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let unsubscribeProfile: (() => void) | null = null;
 
-    const applySessionUser = async (sessionUser: SupabaseUser | null, session: import('@supabase/supabase-js').Session | null) => {
+    const applySessionUser = async (
+      sessionUser: SupabaseUser | null,
+      session: import('@supabase/supabase-js').Session | null,
+      event: import('@supabase/supabase-js').AuthChangeEvent = 'INITIAL_SESSION'
+    ) => {
       if (unsubscribeProfile) {
         unsubscribeProfile();
         unsubscribeProfile = null;
       }
 
       setAuthError(null);
+      if (event === 'PASSWORD_RECOVERY' || isPasswordRecoveryCallback()) {
+        setIsPasswordRecovery(true);
+        setAuthNotice('Enter a new password to finish resetting your account.');
+      }
 
       if (!sessionUser) {
         lastAuditedSignInRef.current = null;
+        setIsPasswordRecovery(false);
         setUser(null);
         setProfile(null);
         setCurrentUser(null);
@@ -210,12 +229,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    const subscription = onAuthSessionChange((sessionUser, session) => {
-      void applySessionUser(sessionUser, session);
+    const subscription = onAuthSessionChange((sessionUser, session, event) => {
+      void applySessionUser(sessionUser, session, event);
     });
 
     void getInitialSession().then((session) => {
-      void applySessionUser(session?.user ?? null, session ?? null);
+      void applySessionUser(session?.user ?? null, session ?? null, isPasswordRecoveryCallback() ? 'PASSWORD_RECOVERY' : 'INITIAL_SESSION');
     }).catch((error) => {
       setAuthError(getAuthErrorMessage(error));
       setLoading(false);
@@ -348,10 +367,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const normalizedEmail = requireValidEmail(email);
       setAuthError(null);
       await requestPasswordReset(normalizedEmail);
-      setAuthNotice(`Password reset instructions were sent to ${normalizedEmail}.`);
+      setAuthNotice(`Password reset instructions were sent to ${normalizedEmail}. Open the email link, then choose a new password in FlowForge.`);
       void AuditService.log(AuditAction.AUTH_PASSWORD_RESET_REQUESTED, {
         email: normalizedEmail,
       });
+    } catch (error) {
+      setAuthNotice(null);
+      setAuthError(getAuthErrorMessage(error));
+    }
+  };
+
+  const completePasswordRecovery = async (password: string) => {
+    try {
+      const normalizedPassword = password.trim();
+
+      if (!normalizedPassword) {
+        throw new Error('Enter a new password.');
+      }
+
+      if (normalizedPassword.length < 8) {
+        throw new Error('Password should be at least 8 characters long.');
+      }
+
+      setAuthError(null);
+      await updatePassword(normalizedPassword);
+      clearAuthRecoveryParams();
+      setIsPasswordRecovery(false);
+      setAuthNotice('Password updated. You can continue into FlowForge.');
     } catch (error) {
       setAuthNotice(null);
       setAuthError(getAuthErrorMessage(error));
@@ -401,6 +443,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         authError,
         authNotice,
+        isPasswordRecovery,
         availableProviders,
         defaultLoginProfiles,
         login,
@@ -411,6 +454,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         requestOneTimeCode: sendOneTimeCode,
         verifyOneTimeCode: confirmOneTimeCode,
         requestPasswordReset: sendPasswordResetLink,
+        completePasswordRecovery,
         logout,
         logoutAllSessions,
         updateProfile,

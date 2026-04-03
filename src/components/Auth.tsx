@@ -12,6 +12,8 @@ interface AuthProps {
   onOneTimeCodeRequest?: (email: string) => Promise<void> | void;
   onOneTimeCodeVerify?: (email: string, code: string) => Promise<void> | void;
   onPasswordResetRequest?: (email: string) => Promise<void> | void;
+  onPasswordRecoveryComplete?: (password: string) => Promise<void> | void;
+  isPasswordRecovery?: boolean;
   providers?: AuthProviderDescriptor[];
   defaultUsers?: DefaultLoginProfile[];
   error?: string | null;
@@ -57,9 +59,10 @@ function getProviderIcon(providerId: AuthProviderId) {
   }
 }
 
-export default function Auth({ onLogin, onPasswordLogin, onProviderLogin, onEnterpriseSsoLogin, onMagicLinkLogin, onOneTimeCodeRequest, onOneTimeCodeVerify, onPasswordResetRequest, providers = defaultProviders, defaultUsers = [], error, notice }: AuthProps) {
+export default function Auth({ onLogin, onPasswordLogin, onProviderLogin, onEnterpriseSsoLogin, onMagicLinkLogin, onOneTimeCodeRequest, onOneTimeCodeVerify, onPasswordResetRequest, onPasswordRecoveryComplete, isPasswordRecovery = false, providers = defaultProviders, defaultUsers = [], error, notice }: AuthProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [oneTimeCode, setOneTimeCode] = useState('');
   const [enterpriseIdentifier, setEnterpriseIdentifier] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
@@ -175,6 +178,22 @@ export default function Auth({ onLogin, onPasswordLogin, onProviderLogin, onEnte
       }
 
       await onPasswordResetRequest(email);
+    });
+  };
+
+  const handlePasswordRecoveryComplete = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    await runAction('password-recovery', async () => {
+      if (!onPasswordRecoveryComplete) {
+        throw new Error('Password recovery is not available yet.');
+      }
+
+      if (password !== passwordConfirmation) {
+        throw new Error('Passwords do not match.');
+      }
+
+      await onPasswordRecoveryComplete(password);
     });
   };
 
@@ -321,6 +340,48 @@ export default function Auth({ onLogin, onPasswordLogin, onProviderLogin, onEnte
           </div>
 
           <div className="rounded-3xl border border-white/10 bg-black/30 p-6 text-left backdrop-blur-sm">
+            {isPasswordRecovery ? (
+              <>
+                <p className="text-xs font-bold uppercase tracking-[0.3em] text-rose-300">Password Recovery</p>
+                <p className="mt-3 text-sm leading-6 text-gray-400">Choose a new password to finish your Supabase recovery flow. After saving it, FlowForge will continue with your recovered session.</p>
+
+                <form className="mt-6 space-y-3" onSubmit={handlePasswordRecoveryComplete}>
+                  <label className="block text-xs font-bold uppercase tracking-[0.25em] text-gray-500" htmlFor="auth-recovery-password">
+                    New Password
+                  </label>
+                  <input
+                    id="auth-recovery-password"
+                    type="password"
+                    autoComplete="new-password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    placeholder="Choose a new password"
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-rose-400"
+                  />
+                  <label className="block text-xs font-bold uppercase tracking-[0.25em] text-gray-500" htmlFor="auth-recovery-password-confirmation">
+                    Confirm Password
+                  </label>
+                  <input
+                    id="auth-recovery-password-confirmation"
+                    type="password"
+                    autoComplete="new-password"
+                    value={passwordConfirmation}
+                    onChange={(event) => setPasswordConfirmation(event.target.value)}
+                    placeholder="Repeat the new password"
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-rose-400"
+                  />
+                  <button
+                    type="submit"
+                    disabled={Boolean(pendingAction)}
+                    className="flex w-full items-center justify-center gap-3 rounded-2xl border border-rose-400/30 bg-rose-500/10 px-5 py-3 font-semibold text-rose-100 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <KeyRound size={18} />
+                    {pendingAction === 'password-recovery' ? 'Updating password...' : 'Update password'}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <>
             {defaultUsers.length ? (
               <>
                 <p className="text-xs font-bold uppercase tracking-[0.3em] text-amber-300">Default Users</p>
@@ -453,6 +514,8 @@ export default function Auth({ onLogin, onPasswordLogin, onProviderLogin, onEnte
               <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-sm leading-6 text-gray-400">
                 Email one-time codes stay disabled until the Supabase email template is switched to use the Token variable and VITE_SUPABASE_EMAIL_OTP_ENABLED=true is set for this environment.
               </div>
+            )}
+              </>
             )}
           </div>
         </div>

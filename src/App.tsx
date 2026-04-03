@@ -284,12 +284,14 @@ function AppRoutes() {
     requestMagicLink,
     requestOneTimeCode,
     requestPasswordReset,
+    completePasswordRecovery,
     setRole,
     updateProfile,
     verifyOneTimeCode,
     loading,
     authError,
     authNotice,
+    isPasswordRecovery,
     availableProviders,
     defaultLoginProfiles,
   } = useAuth();
@@ -305,7 +307,7 @@ function AppRoutes() {
     return <LoadingScreen />;
   }
 
-  if (!user) {
+  if (!user || isPasswordRecovery) {
     return (
       <Auth
         onLogin={login}
@@ -316,6 +318,8 @@ function AppRoutes() {
         onOneTimeCodeRequest={requestOneTimeCode}
         onOneTimeCodeVerify={verifyOneTimeCode}
         onPasswordResetRequest={requestPasswordReset}
+        onPasswordRecoveryComplete={completePasswordRecovery}
+        isPasswordRecovery={isPasswordRecovery}
         providers={availableProviders}
         defaultUsers={defaultLoginProfiles}
         error={authError}

@@ -1,4 +1,4 @@
-import { createClient, type Session, type User as SupabaseUser } from '@supabase/supabase-js';
+import { createClient, type AuthChangeEvent, type Session, type User as SupabaseUser } from '@supabase/supabase-js';
 import {
   getAuthProviderCatalog,
   getOAuthProvider,
@@ -81,7 +81,7 @@ export const db = {
   provider: 'supabase',
 } as const;
 
-function getAuthRedirectUrl() {
+function getConfiguredAuthBaseUrl() {
   if (import.meta.env.VITE_AUTH_REDIRECT_URL) {
     return import.meta.env.VITE_AUTH_REDIRECT_URL;
   }
@@ -91,6 +91,15 @@ function getAuthRedirectUrl() {
   }
 
   return undefined;
+}
+
+function getAuthRedirectUrl(path = '/') {
+  const baseUrl = getConfiguredAuthBaseUrl();
+  if (!baseUrl) {
+    return undefined;
+  }
+
+  return new URL(path, baseUrl).toString();
 }
 
 export function setCurrentUser(user: AuthenticatedUser | null) {
@@ -120,6 +129,27 @@ export function mapSupabaseUserToProviderData(user: SupabaseUser): ProviderInfo[
 
 export function getSupportedAuthProviders(): AuthProviderDescriptor[] {
   return getAuthProviderCatalog();
+}
+
+export function isPasswordRecoveryCallback() {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const searchParams = new URLSearchParams(window.location.search);
+  return hashParams.get('type') === 'recovery' || searchParams.get('type') === 'recovery';
+}
+
+export function clearAuthRecoveryParams() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const url = new URL(window.location.href);
+  url.hash = '';
+  url.searchParams.delete('type');
+  window.history.replaceState({}, document.title, url.toString());
 }
 
 export async function getInitialSession() {
@@ -297,8 +327,18 @@ export async function requestEmailOneTimeCode(email: string) {
 
 export async function requestPasswordReset(email: string) {
   requireSupabaseConfig();
-  const redirectTo = getAuthRedirectUrl();
+  const redirectTo = getAuthRedirectUrl('/auth/recovery');
   const { error } = await supabase!.auth.resetPasswordForEmail(email, redirectTo ? { redirectTo } : undefined);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function updatePassword(password: string) {
+  requireSupabaseConfig();
+
+  const { error } = await supabase!.auth.updateUser({ password });
 
   if (error) {
     throw error;
@@ -332,16 +372,16 @@ export async function signOutCurrentUser(scope: 'local' | 'global' | 'others' = 
   setCurrentUser(null);
 }
 
-export function onAuthSessionChange(callback: (sessionUser: SupabaseUser | null, session: Session | null) => void) {
+export function onAuthSessionChange(callback: (sessionUser: SupabaseUser | null, session: Session | null, event: AuthChangeEvent) => void) {
   if (!supabase) {
-    callback(null, null);
+    callback(null, null, 'INITIAL_SESSION');
     return {
       unsubscribe() {},
     };
   }
 
-  const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-    callback(session?.user ?? null, session ?? null);
+  const { data } = supabase.auth.onAuthStateChange((event, session) => {
+    callback(session?.user ?? null, session ?? null, event);
   });
 
   return data.subscription;
