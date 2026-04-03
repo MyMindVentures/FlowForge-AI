@@ -324,7 +324,7 @@ export default function Auth({ onLogin, onPasswordLogin, onProviderLogin, onEnte
             {defaultUsers.length ? (
               <>
                 <p className="text-xs font-bold uppercase tracking-[0.3em] text-amber-300">Default Users</p>
-                <p className="mt-3 text-sm leading-6 text-gray-400">Pick Kevin or Loli to preload the correct email, then enter the seeded password.</p>
+                <p className="mt-3 text-sm leading-6 text-gray-400">Pick Kevin or Loli to preload the correct email, then enter the current shared admin password.</p>
 
                 <div className="mt-6 grid gap-3 sm:grid-cols-2">
                   {defaultUsers.map((defaultUser) => {
@@ -350,7 +350,7 @@ export default function Auth({ onLogin, onPasswordLogin, onProviderLogin, onEnte
             ) : null}
 
             <p className="text-xs font-bold uppercase tracking-[0.3em] text-sky-300">Email And Password</p>
-            <p className="mt-3 text-sm leading-6 text-gray-400">Use the shared admin password or your own Supabase password when direct sign-in is enabled for your account. Email verification and reset links stay in the same Supabase flow.</p>
+            <p className="mt-3 text-sm leading-6 text-gray-400">Use the current shared admin password or your own Supabase password when direct sign-in is enabled for your account. Email verification and reset links stay in the same Supabase flow.</p>
 
             <form className="mt-6 space-y-3" onSubmit={handlePasswordLogin}>
               <label className="block text-xs font-bold uppercase tracking-[0.25em] text-gray-500" htmlFor="auth-email">
