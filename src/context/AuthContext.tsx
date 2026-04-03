@@ -66,6 +66,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setProfile(newProfile);
           }
           setLoading(false);
+        }, (error) => {
+          console.error('AuthContext: Profile snapshot error:', error);
+          setLoading(false);
         });
 
         return () => unsubscribeProfile();

@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, MessageSquare, Bell, Shield, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Bell, Shield, Settings, LogOut, Bot } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import SyncIndicator from './SyncIndicator';
@@ -31,6 +31,7 @@ export default function Layout({ children, projectName, onLogout, isAdmin = fals
       disabled: !selectedProject 
     },
     { id: 'notifications', label: 'Alerts', icon: Bell, path: '/notifications' },
+    { id: 'agents', label: 'Agents', icon: Bot, path: '/agents' },
     ...(isAdmin ? [{ id: 'admin', label: 'Admin', icon: Shield, path: '/admin' }] : []),
     { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
   ];

@@ -5,8 +5,8 @@ import { Project } from '../types';
 import { useToast } from './Toast';
 
 interface AIAgentsProps {
-  project: Project;
-  onBack: () => void;
+  project?: Project;
+  onBack?: () => void;
 }
 
 export default function AIAgents({ project, onBack }: AIAgentsProps) {
@@ -21,15 +21,19 @@ export default function AIAgents({ project, onBack }: AIAgentsProps) {
     <div className="p-4 lg:p-12 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-12">
         <div className="flex items-center gap-4">
-          <button
-            onClick={onBack}
-            className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-all"
-          >
-            <ArrowLeft size={20} />
-          </button>
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+            >
+              <ArrowLeft size={20} />
+            </button>
+          )}
           <div>
             <h2 className="text-3xl font-bold text-white tracking-tight">AI Agents</h2>
-            <p className="text-gray-400 mt-1">Configure and manage AI agents for {project.name}</p>
+            <p className="text-gray-400 mt-1">
+              {project ? `Configure and manage AI agents for ${project.name}` : 'Manage global AI agents and automation workflows'}
+            </p>
           </div>
         </div>
         <button 

@@ -22,14 +22,17 @@ service cloud.firestore {
 
     function isProjectOwner(projectId) {
       return isAuthenticated() && (
-        isAdmin() ||
+        request.auth.token.email == 'lacometta33@gmail.com' ||
         get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid
       );
     }
 
     function isProjectMember(projectId) {
-      // For now, members are owners or admins.
-      return isProjectOwner(projectId);
+      return isAuthenticated() && (
+        request.auth.token.email == 'lacometta33@gmail.com' ||
+        get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid ||
+        request.auth.uid in get(/databases/$(database)/documents/projects/$(projectId)).data.members
+      );
     }
 
     // ===============================================================
@@ -119,15 +122,24 @@ service cloud.firestore {
     }
 
     match /projects/{projectId} {
-      allow get: if isAuthenticated() && (isAdmin() || isProjectMember(projectId));
-      allow list: if isAuthenticated() && (
-        isAdmin() || 
+      allow get: if isAuthenticated() && (
+        request.auth.token.email == 'lacometta33@gmail.com' || 
         resource.data.ownerId == request.auth.uid || 
-        request.auth.uid in resource.data.members
+        (resource.data.keys().contains('members') && request.auth.uid in resource.data.members)
+      );
+      allow list: if isAuthenticated() && (
+        request.auth.token.email == 'lacometta33@gmail.com' || 
+        resource.data.ownerId == request.auth.uid || 
+        (resource.data.keys().contains('members') && request.auth.uid in resource.data.members)
       );
       allow create: if isAuthenticated() && isValidProject(request.resource.data);
-      allow update: if isAuthenticated() && (isAdmin() || isProjectOwner(projectId)) && isValidProject(request.resource.data);
-      allow delete: if isAdmin() || (isProjectOwner(projectId) && resource.data.name != 'FlowForge AI');
+      allow update: if isAuthenticated() && (
+        request.auth.token.email == 'lacometta33@gmail.com' || 
+        resource.data.ownerId == request.auth.uid
+      ) && isValidProject(request.resource.data);
+      allow delete: if request.auth.token.email == 'lacometta33@gmail.com' || (
+        resource.data.ownerId == request.auth.uid && resource.data.name != 'FlowForge AI'
+      );
 
       // Project Settings
       match /settings/config {

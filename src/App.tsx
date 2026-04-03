@@ -13,11 +13,10 @@ import Onboarding from './components/Onboarding';
 import RoleSelection from './components/RoleSelection';
 import ProjectHub from './components/ProjectHub';
 import Roadmap from './components/Roadmap';
-import ProjectDocumentation from './components/ProjectDocumentation';
+import ProjectKnowledgeBase from './components/ProjectKnowledgeBase';
 import MarketingKit from './components/MarketingKit';
 import AssetManager from './components/AssetManager';
 import ProjectSettings from './components/ProjectSettings';
-import ProjectSpecifications from './components/ProjectSpecifications';
 import AIAgents from './components/AIAgents';
 import UIArchitecture from './components/UIArchitecture';
 import FeatureChat from './components/FeatureChat';
@@ -316,17 +315,16 @@ function AppRoutes() {
               <Route path="feature/:featureId" element={<FeatureDetailWrapper />} />
               <Route path="feature/:featureId/chat" element={<FeatureChatWrapper />} />
               <Route path="roadmap" element={<RoadmapWrapper />} />
-              <Route path="docs" element={<ProjectDocumentation project={selectedProject!} features={features} onBack={() => navigate(`/projects/${selectedProject!.id}/workspace`)} />} />
+              <Route path="knowledge-base" element={<ProjectKnowledgeBase project={selectedProject!} features={features} onUpdate={updateProject} onBack={() => navigate(`/projects/${selectedProject!.id}/workspace`)} />} />
               <Route path="marketing" element={<MarketingKit project={selectedProject!} features={features} onBack={() => navigate(`/projects/${selectedProject!.id}/workspace`)} />} />
               <Route path="assets" element={<AssetManager project={selectedProject!} features={features} onBack={() => navigate(`/projects/${selectedProject!.id}/workspace`)} />} />
               <Route path="settings" element={<ProjectSettings project={selectedProject!} onUpdate={updateProject} onBack={() => navigate(`/projects/${selectedProject!.id}/workspace`)} />} />
-              <Route path="specifications" element={<ProjectSpecifications project={selectedProject!} onUpdate={updateProject} onBack={() => navigate(`/projects/${selectedProject!.id}/workspace`)} />} />
-              <Route path="agents" element={<AIAgents project={selectedProject!} onBack={() => navigate(`/projects/${selectedProject!.id}/workspace`)} />} />
               <Route path="ui-architecture" element={<UIArchitectureWrapper />} />
             </Route>
 
             {/* Global Modules */}
             <Route path="/notifications" element={<Notifications />} />
+            <Route path="/agents" element={<AIAgents project={selectedProject || undefined} />} />
             <Route path="/settings" element={<SettingsView />} />
             <Route path="/admin" element={<AdminGuard><Admin /></AdminGuard>} />
           </Route>

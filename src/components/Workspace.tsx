@@ -119,6 +119,8 @@ export default function Workspace({ project, onApproveSuggestion }: WorkspacePro
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const feats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Feature[];
       setAllFeatures(feats);
+    }, (error) => {
+      console.error('Workspace: Features snapshot error:', error);
     });
     return () => unsubscribe();
   }, [project?.id]);

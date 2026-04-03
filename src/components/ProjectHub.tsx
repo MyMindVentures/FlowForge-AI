@@ -26,19 +26,9 @@ interface ProjectHubProps {
 
 const modules = [
   {
-    id: 'roadmap',
-    title: 'Roadmap',
-    description: 'Project timeline & milestones',
-    icon: Map,
-    color: 'text-emerald-400',
-    bg: 'bg-emerald-400/10',
-    lastActivity: '2h ago',
-    badge: 0
-  },
-  {
     id: 'ideation',
-    title: 'Feature Chat',
-    description: 'AI-powered ideation & suggestions',
+    title: 'AI Ideation',
+    description: 'Brainstorm features & suggestions with AI',
     icon: MessageSquare,
     color: 'text-indigo-400',
     bg: 'bg-indigo-400/10',
@@ -46,9 +36,39 @@ const modules = [
     badge: 3
   },
   {
+    id: 'knowledge-base',
+    title: 'Knowledge Base',
+    description: 'Project vision, specs & AI documentation',
+    icon: FileText,
+    color: 'text-sky-400',
+    bg: 'bg-sky-400/10',
+    lastActivity: 'Updated',
+    badge: 1
+  },
+  {
+    id: 'roadmap',
+    title: 'Project Roadmap',
+    description: 'Timeline, versions & milestones',
+    icon: Map,
+    color: 'text-emerald-400',
+    bg: 'bg-emerald-400/10',
+    lastActivity: '2h ago',
+    badge: 0
+  },
+  {
+    id: 'ui-architecture',
+    title: 'App Architecture',
+    description: 'Pages, components & design system',
+    icon: LayoutIcon,
+    color: 'text-indigo-400',
+    bg: 'bg-indigo-400/10',
+    lastActivity: 'New',
+    badge: 0
+  },
+  {
     id: 'backlog',
-    title: 'Feature Management',
-    description: 'Backlog & technical specs',
+    title: 'Feature Backlog',
+    description: 'Manage features & technical briefs',
     icon: LayoutIcon,
     color: 'text-amber-400',
     bg: 'bg-amber-400/10',
@@ -56,49 +76,9 @@ const modules = [
     badge: 0
   },
   {
-    id: 'specifications',
-    title: 'Project Specs',
-    description: 'High-level PRD & concept summary',
-    icon: FileText,
-    color: 'text-sky-400',
-    bg: 'bg-sky-400/10',
-    lastActivity: '3h ago',
-    badge: 1
-  },
-  {
-    id: 'docs',
-    title: 'Documentation',
-    description: 'Developer guides & API docs',
-    icon: FileCode,
-    color: 'text-blue-400',
-    bg: 'bg-blue-400/10',
-    lastActivity: 'New',
-    badge: 0
-  },
-  {
-    id: 'marketing',
-    title: 'Showcase Suite',
-    description: 'AI-powered taglines & pitch decks',
-    icon: Megaphone,
-    color: 'text-rose-400',
-    bg: 'bg-rose-400/10',
-    lastActivity: 'New',
-    badge: 0
-  },
-  {
-    id: 'agents',
-    title: 'AI Agents',
-    description: 'Custom automation & workflows',
-    icon: Bot,
-    color: 'text-violet-400',
-    bg: 'bg-violet-400/10',
-    lastActivity: '12h ago',
-    badge: 2
-  },
-  {
     id: 'assets',
-    title: 'Assets',
-    description: 'Media, icons & design files',
+    title: 'Asset Library',
+    description: 'Media, icons & design resources',
     icon: ImageIcon,
     color: 'text-fuchsia-400',
     bg: 'bg-fuchsia-400/10',
@@ -106,23 +86,23 @@ const modules = [
     badge: 0
   },
   {
+    id: 'marketing',
+    title: 'Marketing Kit',
+    description: 'AI taglines, pitch decks & showcase',
+    icon: Megaphone,
+    color: 'text-rose-400',
+    bg: 'bg-rose-400/10',
+    lastActivity: 'New',
+    badge: 0
+  },
+  {
     id: 'settings',
-    title: 'Settings',
-    description: 'Project config & visibility',
+    title: 'Project Settings',
+    description: 'Configuration, visibility & members',
     icon: SettingsIcon,
     color: 'text-gray-400',
     bg: 'bg-gray-400/10',
     lastActivity: '1w ago',
-    badge: 0
-  },
-  {
-    id: 'ui-architecture',
-    title: 'UI Architecture',
-    description: 'Pages, components & design system',
-    icon: LayoutIcon,
-    color: 'text-indigo-400',
-    bg: 'bg-indigo-400/10',
-    lastActivity: 'New',
     badge: 0
   }
 ];
@@ -135,8 +115,7 @@ export default function ProjectHub({ project, onNavigate }: ProjectHubProps) {
     const routeMap: Record<string, string> = {
       'ideation': 'ideation',
       'backlog': 'backlog',
-      'specifications': 'specifications',
-      'docs': 'docs',
+      'knowledge-base': 'knowledge-base',
       'marketing': 'marketing',
       'agents': 'agents',
       'assets': 'assets',

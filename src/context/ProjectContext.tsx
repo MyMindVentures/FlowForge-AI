@@ -61,7 +61,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     return localStorage.getItem('selected_project_id');
   });
 
-  const { data: projects, loading: projectsLoading, add: addProjectDoc, update: updateProjectDoc } = useFirestore<Project>(
+  const { data: projects, loading: projectsLoading, add: addProjectDoc, update: updateProjectDoc, set: setProjectDoc } = useFirestore<Project>(
     user ? 'projects' : null, 
     user ? (isAdmin ? [] : [where('ownerId', '==', user.uid)]) : []
   );
@@ -119,14 +119,24 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   const updateProject = async (updates: Partial<Project>) => {
     if (!selectedProjectId) return;
-    await updateProjectDoc(selectedProjectId, updates);
+    const existing = projects.find(p => p.id === selectedProjectId);
+    if (existing) {
+      await setProjectDoc(selectedProjectId, { ...existing, ...updates } as Project);
+    } else {
+      await updateProjectDoc(selectedProjectId, updates);
+    }
   };
 
   const updateProjectById = async (id: string, updates: Partial<Project>) => {
-    await updateProjectDoc(id, updates);
+    const existing = projects.find(p => p.id === id);
+    if (existing) {
+      await setProjectDoc(id, { ...existing, ...updates } as Project);
+    } else {
+      await updateProjectDoc(id, updates);
+    }
   };
 
-  const { data: features, loading: featuresLoading, syncStatus: featuresSync, add: addFeatureDoc, update: updateFeatureDoc } = useFirestore<Feature>(
+  const { data: features, loading: featuresLoading, syncStatus: featuresSync, add: addFeatureDoc, update: updateFeatureDoc, set: setFeatureDoc } = useFirestore<Feature>(
     (user && selectedProjectId) ? `projects/${selectedProjectId}/features` : null, 
     []
   );
@@ -143,17 +153,17 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  const { data: pages, loading: pagesLoading, add: addPageDoc, update: updatePageDoc } = useFirestore<UIPage>(
+  const { data: pages, loading: pagesLoading, add: addPageDoc, update: updatePageDoc, set: setPageDoc } = useFirestore<UIPage>(
     (user && selectedProjectId) ? `projects/${selectedProjectId}/ui_pages` : null, 
     []
   );
 
-  const { data: components, loading: componentsLoading, add: addComponentDoc, update: updateComponentDoc } = useFirestore<UIComponent>(
+  const { data: components, loading: componentsLoading, add: addComponentDoc, update: updateComponentDoc, set: setComponentDoc } = useFirestore<UIComponent>(
     (user && selectedProjectId) ? `projects/${selectedProjectId}/ui_components` : null, 
     []
   );
 
-  const { data: layouts, loading: layoutsLoading, add: addLayoutDoc, update: updateLayoutDoc } = useFirestore<UILayout>(
+  const { data: layouts, loading: layoutsLoading, add: addLayoutDoc, update: updateLayoutDoc, set: setLayoutDoc } = useFirestore<UILayout>(
     (user && selectedProjectId) ? `projects/${selectedProjectId}/ui_layouts` : null, 
     []
   );
@@ -163,12 +173,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  const { data: prdSections, add: addPRDSectionDoc, update: updatePRDSectionDoc } = useFirestore<PRDSection>(
+  const { data: prdSections, add: addPRDSectionDoc, update: updatePRDSectionDoc, set: setPRDSectionDoc } = useFirestore<PRDSection>(
     (user && selectedProjectId) ? `projects/${selectedProjectId}/prd_sections` : null, 
     []
   );
 
-  const { data: auditFindings, add: addAuditFindingDoc, update: updateAuditFindingDoc } = useFirestore<AuditFinding>(
+  const { data: auditFindings, add: addAuditFindingDoc, update: updateAuditFindingDoc, set: setAuditFindingDoc } = useFirestore<AuditFinding>(
     (user && selectedProjectId) ? `projects/${selectedProjectId}/audit_findings` : null, 
     []
   );
@@ -178,17 +188,17 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  const { data: blockers, add: addBlockerDoc, update: updateBlockerDoc } = useFirestore<Blocker>(
+  const { data: blockers, add: addBlockerDoc, update: updateBlockerDoc, set: setBlockerDoc } = useFirestore<Blocker>(
     (user && selectedProjectId) ? `projects/${selectedProjectId}/blockers` : null, 
     []
   );
 
-  const { data: tasks, add: addTaskDoc, update: updateTaskDoc } = useFirestore<Task>(
+  const { data: tasks, add: addTaskDoc, update: updateTaskDoc, set: setTaskDoc } = useFirestore<Task>(
     (user && selectedProjectId) ? `projects/${selectedProjectId}/tasks` : null, 
     []
   );
 
-  const { data: functions, add: addFunctionDoc, update: updateFunctionDoc } = useFirestore<LLMFunction>(
+  const { data: functions, add: addFunctionDoc, update: updateFunctionDoc, set: setFunctionDoc } = useFirestore<LLMFunction>(
     (user && selectedProjectId) ? `projects/${selectedProjectId}/ai_functions` : null, 
     []
   );
@@ -202,7 +212,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   const updatePage = async (id: string, updates: Partial<UIPage>) => {
     if (!selectedProjectId) throw new Error('No project selected');
-    await updatePageDoc(id, updates);
+    // Use set with merge: true for robustness during sync
+    const existing = pages.find(p => p.id === id);
+    if (existing) {
+      await setPageDoc(id, { ...existing, ...updates } as UIPage);
+    } else {
+      await updatePageDoc(id, updates);
+    }
   };
   
   const addFeature = async (feature: Omit<Feature, 'id'>) => {
@@ -212,7 +228,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   const updateFeature = async (id: string, updates: Partial<Feature>) => {
     if (!selectedProjectId) throw new Error('No project selected');
-    await updateFeatureDoc(id, updates);
+    const existing = features.find(f => f.id === id);
+    if (existing) {
+      await setFeatureDoc(id, { ...existing, ...updates } as Feature);
+    } else {
+      await updateFeatureDoc(id, updates);
+    }
   };
 
   const addComponent = async (component: Omit<UIComponent, 'id'>) => {
@@ -222,7 +243,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   const updateComponent = async (id: string, updates: Partial<UIComponent>) => {
     if (!selectedProjectId) throw new Error('No project selected');
-    await updateComponentDoc(id, updates);
+    const existing = components.find(c => c.id === id);
+    if (existing) {
+      await setComponentDoc(id, { ...existing, ...updates } as UIComponent);
+    } else {
+      await updateComponentDoc(id, updates);
+    }
   };
 
   const updateStyleSystem = async (updates: Partial<UIStyleSystem>) => {
@@ -269,7 +295,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   const updateLayout = async (id: string, updates: Partial<UILayout>) => {
     if (!selectedProjectId) throw new Error('No project selected');
-    await updateLayoutDoc(id, updates);
+    const existing = layouts.find(l => l.id === id);
+    if (existing) {
+      await setLayoutDoc(id, { ...existing, ...updates } as UILayout);
+    } else {
+      await updateLayoutDoc(id, updates);
+    }
   };
 
   const addPRDSection = async (section: Omit<PRDSection, 'id'>) => {
@@ -279,7 +310,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   const updatePRDSection = async (id: string, updates: Partial<PRDSection>) => {
     if (!selectedProjectId) throw new Error('No project selected');
-    await updatePRDSectionDoc(id, updates);
+    const existing = prdSections.find(s => s.id === id);
+    if (existing) {
+      await setPRDSectionDoc(id, { ...existing, ...updates } as PRDSection);
+    } else {
+      await updatePRDSectionDoc(id, updates);
+    }
   };
 
   const addAuditFinding = async (finding: Omit<AuditFinding, 'id'>) => {
@@ -289,7 +325,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   const updateAuditFinding = async (id: string, updates: Partial<AuditFinding>) => {
     if (!selectedProjectId) throw new Error('No project selected');
-    await updateAuditFindingDoc(id, updates);
+    const existing = auditFindings.find(f => f.id === id);
+    if (existing) {
+      await setAuditFindingDoc(id, { ...existing, ...updates } as AuditFinding);
+    } else {
+      await updateAuditFindingDoc(id, updates);
+    }
   };
 
   const addReadinessCheck = async (check: ReadinessCheck | Omit<ReadinessCheck, 'id'>) => {
@@ -303,7 +344,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   const updateReadinessCheck = async (id: string, updates: Partial<ReadinessCheck>) => {
     if (!selectedProjectId) throw new Error('No project selected');
-    await updateReadinessCheckDoc(id, updates);
+    const existing = readinessChecks.find(c => c.id === id);
+    if (existing) {
+      await setReadinessCheckDoc(id, { ...existing, ...updates } as ReadinessCheck);
+    } else {
+      await updateReadinessCheckDoc(id, updates);
+    }
   };
 
   const addBlocker = async (blocker: Omit<Blocker, 'id'>) => {
@@ -313,7 +359,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   const updateBlocker = async (id: string, updates: Partial<Blocker>) => {
     if (!selectedProjectId) throw new Error('No project selected');
-    await updateBlockerDoc(id, updates);
+    const existing = blockers.find(b => b.id === id);
+    if (existing) {
+      await setBlockerDoc(id, { ...existing, ...updates } as Blocker);
+    } else {
+      await updateBlockerDoc(id, updates);
+    }
   };
 
   const addTask = async (task: Omit<Task, 'id'>) => {
@@ -323,7 +374,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   const updateTask = async (id: string, updates: Partial<Task>) => {
     if (!selectedProjectId) throw new Error('No project selected');
-    await updateTaskDoc(id, updates);
+    const existing = tasks.find(t => t.id === id);
+    if (existing) {
+      await setTaskDoc(id, { ...existing, ...updates } as Task);
+    } else {
+      await updateTaskDoc(id, updates);
+    }
   };
 
   const addLLMFunction = async (fn: Omit<LLMFunction, 'id'>) => {
@@ -333,7 +389,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   const updateLLMFunction = async (id: string, updates: Partial<LLMFunction>) => {
     if (!selectedProjectId) throw new Error('No project selected');
-    await updateFunctionDoc(id, updates);
+    const existing = functions.find(f => f.id === id);
+    if (existing) {
+      await setFunctionDoc(id, { ...existing, ...updates } as LLMFunction);
+    } else {
+      await updateFunctionDoc(id, updates);
+    }
   };
 
   const addVersion = async (version: Omit<Version, 'id'>) => {
