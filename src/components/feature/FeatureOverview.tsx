@@ -1,8 +1,8 @@
 import React from 'react';
-import { AlertCircle, CheckCircle2, User, Bot, Archive, Clock, Layers, Sparkles, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Circle, User, Bot, Archive, Clock, Layers, Sparkles, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '../../lib/utils';
-import { Project, Feature } from '../../types';
+import { Project, Feature, FeatureDeliveryChecklist } from '../../types';
 
 interface FeatureOverviewProps {
   project: Project;
@@ -29,6 +29,8 @@ export default function FeatureOverview({
   isAnalyzing,
   onAnalyzeUIImpact
 }: FeatureOverviewProps) {
+  const deliveryChecklist = (isEditing ? editedFeature.deliveryChecklist : feature.deliveryChecklist) || defaultChecklist;
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
       <div className="lg:col-span-2 space-y-6 lg:space-y-8">
@@ -256,6 +258,33 @@ export default function FeatureOverview({
 
           <section className="p-6 lg:p-8 rounded-2xl lg:rounded-3xl bg-[#141414] border border-white/5 shadow-xl">
             <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-sky-500/10 rounded-lg text-sky-400">
+                <CheckCircle2 size={20} />
+              </div>
+              <h3 className="text-base lg:text-lg font-bold text-white uppercase tracking-widest">Implementation Checklist</h3>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {checklistItems.map((item) => (
+                <ChecklistItemCard
+                  key={item.key}
+                  label={item.label}
+                  checked={deliveryChecklist[item.key]}
+                  isEditing={isEditing}
+                  onToggle={() => setEditedFeature({
+                    ...editedFeature,
+                    deliveryChecklist: {
+                      ...(editedFeature.deliveryChecklist || defaultChecklist),
+                      [item.key]: !(editedFeature.deliveryChecklist || defaultChecklist)[item.key],
+                    },
+                  })}
+                />
+              ))}
+            </div>
+          </section>
+
+          <section className="p-6 lg:p-8 rounded-2xl lg:rounded-3xl bg-[#141414] border border-white/5 shadow-xl">
+            <div className="flex items-center gap-3 mb-6">
               <div className="p-2 bg-rose-500/10 rounded-lg text-rose-400">
                 <AlertCircle size={20} />
               </div>
@@ -394,6 +423,28 @@ export default function FeatureOverview({
   );
 }
 
+const defaultChecklist: FeatureDeliveryChecklist = {
+  frontendImplemented: false,
+  backendImplemented: false,
+  databaseImplemented: false,
+  aiImplemented: false,
+  testsImplemented: false,
+  docsUpdated: false,
+  qaApproved: false,
+  readyForRelease: false,
+};
+
+const checklistItems: Array<{ key: keyof FeatureDeliveryChecklist; label: string }> = [
+  { key: 'frontendImplemented', label: 'Frontend Implemented' },
+  { key: 'backendImplemented', label: 'Backend Implemented' },
+  { key: 'databaseImplemented', label: 'Database Implemented' },
+  { key: 'aiImplemented', label: 'AI Implemented' },
+  { key: 'testsImplemented', label: 'Tests Implemented' },
+  { key: 'docsUpdated', label: 'Docs Updated' },
+  { key: 'qaApproved', label: 'QA Approved' },
+  { key: 'readyForRelease', label: 'Ready For Release' },
+];
+
 function DetailField({
   label,
   value,
@@ -429,6 +480,50 @@ function DetailField({
       ) : (
         <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">{value || 'Not set yet.'}</p>
       )}
+    </div>
+  );
+}
+
+function ChecklistItemCard({
+  label,
+  checked,
+  isEditing,
+  onToggle,
+}: {
+  label: string;
+  checked: boolean;
+  isEditing: boolean;
+  onToggle: () => void;
+}) {
+  const Icon = checked ? CheckCircle2 : Circle;
+
+  if (isEditing) {
+    return (
+      <button
+        type="button"
+        onClick={onToggle}
+        className={cn(
+          'flex items-center gap-3 rounded-2xl border px-4 py-4 text-left transition-all',
+          checked
+            ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
+            : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10'
+        )}
+      >
+        <Icon size={18} className={checked ? 'text-emerald-400' : 'text-gray-500'} />
+        <span className="text-sm font-medium">{label}</span>
+      </button>
+    );
+  }
+
+  return (
+    <div className={cn(
+      'flex items-center gap-3 rounded-2xl border px-4 py-4',
+      checked
+        ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
+        : 'border-white/10 bg-white/5 text-gray-400'
+    )}>
+      <Icon size={18} className={checked ? 'text-emerald-400' : 'text-gray-600'} />
+      <span className="text-sm font-medium">{label}</span>
     </div>
   );
 }

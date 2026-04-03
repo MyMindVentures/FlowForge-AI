@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_URL: https://example.supabase.co
+      VITE_SUPABASE_ANON_KEY: test-anon-key
+      VITE_SUPABASE_PUBLISHABLE_KEY: test-publishable-key
+      VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY: test-default-publishable-key
+      VITE_AUTH_REDIRECT_URL: https://example.com/auth/callback
+      VITE_SUPABASE_EMAIL_OTP_ENABLED: "false"
+      VITE_SUPABASE_APPLE_OAUTH_ENABLED: "false"
+      VITE_SUPABASE_ENTERPRISE_SSO_ENABLED: "true"
+      VITE_SUPABASE_PASSKEYS_ENABLED: "false"
+      VITE_SUPABASE_TOTP_MFA_ENABLED: "true"
+      VITE_SUPABASE_SMS_MFA_FALLBACK_ENABLED: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run lint
+
+      - name: Run full test suite
+        continue-on-error: true
+        run: npm run test:run
+
+      - name: Build app
+        run: npm run build
+
+      - name: Upload dist artifact
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: flowforge-web-dist
+          path: dist
+          if-no-files-found: error

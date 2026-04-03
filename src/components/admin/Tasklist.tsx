@@ -32,9 +32,20 @@ export default function Tasklist({ tasks, onSync, isSyncing }: TasklistProps) {
 
   const filteredTasks = tasks.filter(t => {
     const matchesFilter = filter === 'all' || t.status === filter;
-    const matchesSearch = t.title.toLowerCase().includes(search.toLowerCase()) || 
-                         t.description.toLowerCase().includes(search.toLowerCase());
+    const searchValue = search.toLowerCase();
+    const matchesSearch = t.title.toLowerCase().includes(searchValue) || 
+                         t.description.toLowerCase().includes(searchValue) ||
+                         (t.category || '').toLowerCase().includes(searchValue);
     return matchesFilter && matchesSearch;
+  }).sort((left, right) => {
+    const leftOrder = left.sortOrder ?? Number.MAX_SAFE_INTEGER;
+    const rightOrder = right.sortOrder ?? Number.MAX_SAFE_INTEGER;
+
+    if (leftOrder !== rightOrder) {
+      return leftOrder - rightOrder;
+    }
+
+    return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime();
   });
 
   const stats = {
@@ -170,6 +181,12 @@ export default function Tasklist({ tasks, onSync, isSyncing }: TasklistProps) {
                   </p>
                   
                   <div className="flex flex-wrap items-center gap-4">
+                    {task.category && (
+                      <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/15 text-[10px] text-indigo-300 font-bold uppercase tracking-widest">
+                        <Filter size={12} />
+                        {task.category}
+                      </div>
+                    )}
                     {task.relatedEntityType && (
                       <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-white/5 border border-white/5 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
                         {getEntityIcon(task.relatedEntityType)}
@@ -180,6 +197,12 @@ export default function Tasklist({ tasks, onSync, isSyncing }: TasklistProps) {
                       <Clock size={12} />
                       {new Date(task.updatedAt).toLocaleDateString()}
                     </div>
+                    {task.sourceDocument && (
+                      <div className="flex items-center gap-2 text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                        <ChevronRight size={12} />
+                        {task.sourceDocument}
+                      </div>
+                    )}
                     {task.status === 'failing' && (
                       <div className="flex items-center gap-2 text-[10px] text-rose-400 font-bold uppercase tracking-widest">
                         <AlertCircle size={12} />

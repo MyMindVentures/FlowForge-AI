@@ -9,6 +9,10 @@ export type Task = {
   description: string;
   status: SyncStatus;
   priority: 'Low' | 'Medium' | 'High' | 'Critical';
+  category?: string;
+  sourceDocument?: string;
+  sourceKey?: string;
+  sortOrder?: number;
   relatedEntityId?: string;
   relatedEntityType?: 'feature' | 'page' | 'component' | 'layout' | 'function';
   developerNotes?: string;
@@ -229,6 +233,17 @@ export type UIImpactAnalysis = {
   }[];
 };
 
+export type FeatureDeliveryChecklist = {
+  frontendImplemented: boolean;
+  backendImplemented: boolean;
+  databaseImplemented: boolean;
+  aiImplemented: boolean;
+  testsImplemented: boolean;
+  docsUpdated: boolean;
+  qaApproved: boolean;
+  readyForRelease: boolean;
+};
+
 export type Feature = {
   id: string;
   projectId: string;
@@ -266,6 +281,7 @@ export type Feature = {
   notes?: string;
   figmaLink?: string;
   specLink?: string;
+  deliveryChecklist?: FeatureDeliveryChecklist;
   uiImpact?: UIImpactAnalysis;
   isLocked?: boolean;
   visualUrl?: string;

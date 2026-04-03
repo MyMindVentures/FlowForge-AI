@@ -159,6 +159,7 @@ export default function FeatureDetail({ project, feature, onBack, onOpenChat }: 
         notes: editedFeature.notes,
         figmaLink: editedFeature.figmaLink,
         specLink: editedFeature.specLink,
+        deliveryChecklist: editedFeature.deliveryChecklist,
         conceptThinker: editedFeature.conceptThinker,
         builderBrief: editedFeature.builderBrief,
         codingPrompt: editedFeature.codingPrompt,

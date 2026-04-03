@@ -10,6 +10,7 @@ import { useToast } from './Toast';
 import ConfirmModal from './ConfirmModal';
 import { useSupabaseCollection } from '../hooks/useSupabaseCollection';
 import { useAuth } from '../context/AuthContext';
+import { seedProductionTasksForProject } from '../lib/tasklist/productionTasks';
 
 interface DashboardProps {
   onSelectProject: (project: Project) => void;
@@ -63,7 +64,7 @@ export default function Dashboard({ onSelectProject }: DashboardProps) {
 
     setIsSubmitting(true);
     try {
-      await add({
+      const projectId = await add({
         name: newProjectName,
         description: newProjectDesc,
         ownerId: auth.currentUser.uid,
@@ -72,6 +73,9 @@ export default function Dashboard({ onSelectProject }: DashboardProps) {
         members: [],
         repositories: []
       } as any);
+      if (projectId) {
+        await seedProductionTasksForProject(projectId);
+      }
       setNewProjectName('');
       setNewProjectDesc('');
       setIsCreating(false);
@@ -106,7 +110,7 @@ export default function Dashboard({ onSelectProject }: DashboardProps) {
 
   const handleDuplicateProject = async (project: Project) => {
     try {
-      await add({
+      const projectId = await add({
         name: `${project.name} (Copy)`,
         description: project.description,
         ownerId: auth.currentUser?.uid,
@@ -115,6 +119,9 @@ export default function Dashboard({ onSelectProject }: DashboardProps) {
         members: project.members || [],
         repositories: project.repositories || []
       } as any);
+      if (projectId) {
+        await seedProductionTasksForProject(projectId);
+      }
       showToast('Project duplicated');
     } catch (error) {
       showToast('Failed to duplicate project', 'error');

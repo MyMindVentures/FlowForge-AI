@@ -4,6 +4,7 @@ import { useSupabaseCollection } from '../hooks/useSupabaseCollection';
 import { useAuth } from './AuthContext';
 import { where } from '../lib/db/supabaseData';
 import { SyncService } from '../services/SyncService';
+import { seedProductionTasksForProject } from '../lib/tasklist/productionTasks';
 
 interface ProjectContextType {
   projects: Project[];
@@ -85,9 +86,18 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
           repositories: [],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
-        } as any).finally(() => {
-          creatingSystemProject.current = false;
-        });
+        } as any)
+          .then(async (projectId) => {
+            if (projectId) {
+              await seedProductionTasksForProject(projectId);
+            }
+          })
+          .catch((error) => {
+            console.error('ProjectContext: Failed to seed production tasks for system project.', error);
+          })
+          .finally(() => {
+            creatingSystemProject.current = false;
+          });
       } else if (flowForgeProjects.length > 1) {
         console.warn(`ProjectContext: Found ${flowForgeProjects.length} duplicate FlowForge AI projects. Review and consolidate them through the sync service workflow.`);
       }
