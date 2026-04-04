@@ -96,6 +96,21 @@ export function resolveCollectionPath(collectionPath: string): CollectionResolut
     }
   }
 
+  if (parts[0] === 'admin' && parts[1] === 'tenancy' && parts.length === 3) {
+    switch (parts[2]) {
+      case 'organizations':
+        return { table: 'organizations', implicitFilters: [] };
+      case 'members':
+        return { table: 'organization_members', implicitFilters: [] };
+      case 'invites':
+        return { table: 'organization_invites', implicitFilters: [] };
+      case 'settings':
+        return { table: 'organization_settings', implicitFilters: [] };
+      default:
+        break;
+    }
+  }
+
   if (parts[0] === 'admin' && parts[1] === 'audit' && parts[2] === 'logs') {
     return {
       table: 'audit_logs',

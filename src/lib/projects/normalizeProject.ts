@@ -6,6 +6,7 @@ type ProjectRecord = Omit<Partial<Project>, 'id' | 'name' | 'description' | 'own
   description?: unknown;
   ownerId?: unknown;
   ownerAuthId?: unknown;
+  organizationId?: unknown;
   createdAt?: unknown;
   updatedAt?: unknown;
   status?: unknown;
@@ -52,6 +53,7 @@ export function normalizeProject(project: ProjectRecord): Project {
     name: asString(project.name, 'Untitled Project'),
     description: asString(project.description, ''),
     ownerId: asString(project.ownerId, asString(project.ownerAuthId, '')),
+    organizationId: asString(project.organizationId, '' ) || undefined,
     createdAt,
     updatedAt,
     status: normalizeProjectStatus(project.status),

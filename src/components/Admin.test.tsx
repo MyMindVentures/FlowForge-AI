@@ -111,6 +111,43 @@ vi.mock('../hooks/useSupabaseCollection', () => ({
         roleName: 'Admin',
         permissionKey: 'admin.access',
         createdAt: new Date().toISOString()
+      }] :
+      path === 'admin/tenancy/organizations' ? [{
+        id: 'org-1',
+        slug: 'mymind-ventures',
+        displayName: 'MyMind Ventures',
+        ownerId: 'admin-id',
+        ssoDomain: 'mymindventures.io',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }] :
+      path === 'admin/tenancy/members' ? [{
+        id: 'org-member-1',
+        organizationId: 'org-1',
+        userId: 'admin-id',
+        role: 'Admin',
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }] :
+      path === 'admin/tenancy/invites' ? [{
+        id: 'org-invite-1',
+        organizationId: 'org-1',
+        email: 'new.user@example.com',
+        role: 'Builder',
+        inviteToken: 'token-1',
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }] :
+      path === 'admin/tenancy/settings' ? [{
+        organizationId: 'org-1',
+        memberQuota: 25,
+        billingTier: 'internal',
+        featureFlags: {},
+        settings: {},
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       }] : [],
     loading: false,
     error: null,
@@ -160,9 +197,10 @@ describe('Admin', () => {
     fireEvent.click(screen.getByRole('button', { name: /access/i }));
 
     expect(screen.getByText('Access & Identity')).toBeInTheDocument();
-    expect(screen.getByText('MyMind Ventures')).toBeInTheDocument();
+    expect(screen.getAllByText('MyMind Ventures').length).toBeGreaterThan(0);
     expect(screen.getByText('Role Permission Matrix')).toBeInTheDocument();
     expect(screen.getByText('Provider Rollout')).toBeInTheDocument();
+    expect(screen.getByText('Organization Model')).toBeInTheDocument();
   });
 });
 

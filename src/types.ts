@@ -35,6 +35,7 @@ export type UserProfile = {
   phone?: string;
   jobTitle?: string;
   functionTitle?: string;
+  organizationId?: string;
   organizationName?: string;
   githubUsername?: string;
   githubProfileUrl?: string;
@@ -211,6 +212,55 @@ export type ProjectMember = {
   invitedAt?: string;
 };
 
+export type Organization = {
+  id: string;
+  slug: string;
+  displayName: string;
+  ownerId: string;
+  ssoDomain?: string;
+  branding?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type OrganizationMember = {
+  id: string;
+  organizationId: string;
+  userId?: string;
+  invitedEmail?: string;
+  role: UserRole;
+  status: 'invited' | 'active' | 'suspended';
+  invitedBy?: string;
+  joinedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type OrganizationInvite = {
+  id: string;
+  organizationId: string;
+  email: string;
+  role: UserRole;
+  invitedBy?: string;
+  inviteToken: string;
+  status: 'pending' | 'accepted' | 'revoked' | 'expired';
+  expiresAt?: string;
+  acceptedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type OrganizationSettings = {
+  organizationId: string;
+  memberQuota: number;
+  billingTier: string;
+  featureFlags: Record<string, unknown>;
+  settings: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type GitHubRepo = {
   id: string;
   name: string;
@@ -224,6 +274,7 @@ export type Project = {
   name: string;
   description: string;
   ownerId: string;
+  organizationId?: string;
   createdAt: string;
   updatedAt: string;
   status: 'Draft' | 'Active' | 'Archived';

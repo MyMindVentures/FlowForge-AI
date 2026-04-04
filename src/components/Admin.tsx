@@ -4,6 +4,7 @@ import {
   Users, 
   Activity, 
   Settings, 
+  Globe,
   ChevronRight, 
   Cpu, 
   FileCode, 
@@ -23,7 +24,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { where, orderBy, limit } from '../lib/db/supabaseData';
-import { AIModelConfig, PromptTemplate, APIKeyConfig, UsageLog, ErrorLog, AuditLogEntry, Task, LLMFunction, PRDSection, AuditFinding, ReadinessCheck, FeedbackItem, AuthProviderConfig, AuthFlowDefinition, AuthFeatureFlag, PermissionCatalogEntry, RolePermissionAssignment, UserRole } from '../types';
+import { AIModelConfig, PromptTemplate, APIKeyConfig, UsageLog, ErrorLog, AuditLogEntry, Task, LLMFunction, PRDSection, AuditFinding, ReadinessCheck, FeedbackItem, AuthProviderConfig, AuthFlowDefinition, AuthFeatureFlag, PermissionCatalogEntry, RolePermissionAssignment, UserRole, Organization, OrganizationMember, OrganizationInvite, OrganizationSettings } from '../types';
 import { cn } from '../lib/utils';
 import { useSupabaseCollection } from '../hooks/useSupabaseCollection';
 import { useProject } from '../context/ProjectContext';
@@ -122,6 +123,22 @@ export default function Admin() {
   const { data: rolePermissionAssignments } = useSupabaseCollection<RolePermissionAssignment>(
     'admin/auth/role_permissions',
     [orderBy('role_name', 'asc')]
+  );
+  const { data: organizations } = useSupabaseCollection<Organization>(
+    'admin/tenancy/organizations',
+    [orderBy('display_name', 'asc')]
+  );
+  const { data: organizationMembers } = useSupabaseCollection<OrganizationMember>(
+    'admin/tenancy/members',
+    [orderBy('created_at', 'desc')]
+  );
+  const { data: organizationInvites } = useSupabaseCollection<OrganizationInvite>(
+    'admin/tenancy/invites',
+    [orderBy('created_at', 'desc')]
+  );
+  const { data: organizationSettings } = useSupabaseCollection<OrganizationSettings>(
+    'admin/tenancy/settings',
+    [orderBy('organization_id', 'asc')]
   );
 
   // Automatically select FlowForge AI project if no project is selected
@@ -495,6 +512,8 @@ export default function Admin() {
     const enabledProviderCount = authProviders.filter((provider) => provider.isEnabled).length;
     const enabledFlowCount = authFlows.filter((flow) => flow.isEnabled).length;
     const enabledFlagCount = authFeatureFlags.filter((flag) => flag.isEnabled).length;
+    const activeOrganizationMembers = organizationMembers.filter((member) => member.status === 'active').length;
+    const pendingOrganizationInvites = organizationInvites.filter((invite) => invite.status === 'pending').length;
     const permissionMap = APP_ROLES.reduce<Record<UserRole, Set<string>>>((accumulator, role) => {
       accumulator[role] = new Set(
         rolePermissionAssignments
@@ -539,6 +558,13 @@ export default function Admin() {
               detail: 'Production rollout controls from Supabase',
               icon: Zap,
               tone: 'text-sky-400 bg-sky-500/10'
+            },
+            {
+              label: 'Organizations',
+              value: `${organizations.length}`,
+              detail: `${activeOrganizationMembers} active members, ${pendingOrganizationInvites} pending invites`,
+              icon: Globe,
+              tone: 'text-fuchsia-400 bg-fuchsia-500/10'
             }
           ].map((stat) => {
             const Icon = stat.icon;
@@ -694,6 +720,44 @@ export default function Admin() {
           </section>
 
           <section className="space-y-6">
+            <div className="p-8 rounded-3xl bg-[#141414] border border-white/5 shadow-xl space-y-4">
+              <div>
+                <h3 className="text-xl font-bold text-white">Organization Model</h3>
+                <p className="text-sm text-gray-500 mt-1">Tenant scaffolding now exists in the schema for organizations, memberships, invites, and settings.</p>
+              </div>
+              <div className="space-y-3 max-h-[280px] overflow-y-auto pr-2 custom-scrollbar">
+                {organizations.map((organization) => {
+                  const memberCount = organizationMembers.filter((member) => member.organizationId === organization.id && member.status === 'active').length;
+                  const inviteCount = organizationInvites.filter((invite) => invite.organizationId === organization.id && invite.status === 'pending').length;
+                  const settings = organizationSettings.find((entry) => entry.organizationId === organization.id);
+
+                  return (
+                    <div key={organization.id} className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-white font-semibold">{organization.displayName}</p>
+                          <p className="text-xs text-gray-500 mt-1">slug: {organization.slug}{organization.ssoDomain ? ` • sso: ${organization.ssoDomain}` : ''}</p>
+                        </div>
+                        <span className="px-2 py-1 rounded-lg bg-fuchsia-500/10 border border-fuchsia-500/20 text-[10px] font-bold uppercase tracking-widest text-fuchsia-400">
+                          {memberCount} members
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-2 mt-3 text-[10px] uppercase tracking-widest">
+                        <span className="px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-gray-400">{inviteCount} pending invites</span>
+                        <span className="px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-gray-400">tier: {settings?.billingTier || 'unassigned'}</span>
+                        <span className="px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-gray-400">quota: {settings?.memberQuota ?? 0}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+                {organizations.length === 0 && (
+                  <div className="p-12 rounded-3xl bg-[#141414] border border-white/5 border-dashed text-center text-gray-500 italic">
+                    No organizations are available yet. Apply the tenant migration to seed the first workspace records.
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="p-8 rounded-3xl bg-[#141414] border border-white/5 shadow-xl space-y-4">
               <div>
                 <h3 className="text-xl font-bold text-white">Auth Flow Definitions</h3>

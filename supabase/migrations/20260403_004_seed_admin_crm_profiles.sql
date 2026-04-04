@@ -1,18 +1,103 @@
-alter table public.app_users
-  add column if not exists first_name text,
-  add column if not exists last_name text,
-  add column if not exists alias_name text,
-  add column if not exists secondary_email text,
-  add column if not exists phone text,
-  add column if not exists job_title text,
-  add column if not exists function_title text,
-  add column if not exists organization_name text,
-  add column if not exists github_username text,
-  add column if not exists github_profile_url text,
-  add column if not exists github_primary_email text,
-  add column if not exists github_avatar_url text,
-  add column if not exists github_user_id text,
-  add column if not exists bio text;
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'app_users' and column_name = 'first_name'
+  ) then
+    alter table public.app_users add column first_name text;
+  end if;
+
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'app_users' and column_name = 'last_name'
+  ) then
+    alter table public.app_users add column last_name text;
+  end if;
+
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'app_users' and column_name = 'alias_name'
+  ) then
+    alter table public.app_users add column alias_name text;
+  end if;
+
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'app_users' and column_name = 'secondary_email'
+  ) then
+    alter table public.app_users add column secondary_email text;
+  end if;
+
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'app_users' and column_name = 'phone'
+  ) then
+    alter table public.app_users add column phone text;
+  end if;
+
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'app_users' and column_name = 'job_title'
+  ) then
+    alter table public.app_users add column job_title text;
+  end if;
+
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'app_users' and column_name = 'function_title'
+  ) then
+    alter table public.app_users add column function_title text;
+  end if;
+
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'app_users' and column_name = 'organization_name'
+  ) then
+    alter table public.app_users add column organization_name text;
+  end if;
+
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'app_users' and column_name = 'github_username'
+  ) then
+    alter table public.app_users add column github_username text;
+  end if;
+
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'app_users' and column_name = 'github_profile_url'
+  ) then
+    alter table public.app_users add column github_profile_url text;
+  end if;
+
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'app_users' and column_name = 'github_primary_email'
+  ) then
+    alter table public.app_users add column github_primary_email text;
+  end if;
+
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'app_users' and column_name = 'github_avatar_url'
+  ) then
+    alter table public.app_users add column github_avatar_url text;
+  end if;
+
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'app_users' and column_name = 'github_user_id'
+  ) then
+    alter table public.app_users add column github_user_id text;
+  end if;
+
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'app_users' and column_name = 'bio'
+  ) then
+    alter table public.app_users add column bio text;
+  end if;
+end $$;
 
 create unique index if not exists app_users_secondary_email_unique_idx
   on public.app_users (lower(secondary_email))
