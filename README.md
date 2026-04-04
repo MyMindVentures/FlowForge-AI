@@ -34,7 +34,9 @@ FlowForge AI now runs on Supabase for database access, realtime data, and auth i
 
 ## Migration notes
 
+- The files in `supabase/migrations/` are the canonical, versioned database history for this repository. Do not remove them unless they are replaced by an explicit new baseline migration strategy.
 - The enterprise schema is designed to own `public`. If an older product schema already exists there, archive it into `legacy_product` first with [supabase/migrations/20260403_000_archive_legacy_product_schema.sql](supabase/migrations/20260403_000_archive_legacy_product_schema.sql).
+- The archive/import pair in [supabase/migrations/20260403_000_archive_legacy_product_schema.sql](supabase/migrations/20260403_000_archive_legacy_product_schema.sql) and [supabase/migrations/20260403_002_import_legacy_product_data.sql](supabase/migrations/20260403_002_import_legacy_product_data.sql) is legacy-support only. Keep them for older installations, but they are conditional for greenfield setups.
 - The archival migration preserves all existing legacy rows and records table-level row counts in `legacy_product.migration_inventory` for auditability.
 - The legacy import migration hydrates FlowForge tables for users, projects, versions, features, pages, layouts, components, and audit logs. Legacy-only product structures that do not map to the current FlowForge app remain preserved in `legacy_product`.
 - The auth bootstrap migration promotes the first linked Supabase Auth user to `Admin`, which makes the imported FlowForge project reachable even when the database was initialized from archived legacy data.
@@ -49,3 +51,9 @@ FlowForge AI now runs on Supabase for database access, realtime data, and auth i
 ## Catalog sync
 
 - Run `npm run sync:flowforge:product` after applying the latest migrations to upsert the canonical FlowForge AI project overview, pages, components, feature cards, userflows, and relationships.
+- `scripts/check-env.mjs` remains part of the normal dev/build workflow through `npm run env:check`, `predev`, and `prebuild`.
+- `scripts/sync-flowforge-product.ts` remains in the repository because it is still the supported repeatable catalog/bootstrap sync for the seeded FlowForge AI project.
+
+## Legacy docs
+
+- Historical Firebase/Firestore-era reports were moved to [docs/legacy/README.md](docs/legacy/README.md). They are retained for reference only and are not the current setup source of truth.
