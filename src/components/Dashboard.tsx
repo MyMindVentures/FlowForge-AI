@@ -11,6 +11,7 @@ import ConfirmModal from './ConfirmModal';
 import { useSupabaseCollection } from '../hooks/useSupabaseCollection';
 import { useAuth } from '../context/AuthContext';
 import { seedProductionTasksForProject } from '../lib/tasklist/productionTasks';
+import { normalizeProjects } from '../lib/projects/normalizeProject';
 
 interface DashboardProps {
   onSelectProject: (project: Project) => void;
@@ -21,10 +22,11 @@ interface DashboardProps {
  */
 export default function Dashboard({ onSelectProject }: DashboardProps) {
   const { user } = useAuth();
-  const { data: projects, loading, error, add, update, remove } = useSupabaseCollection<Project>(
+  const { data: rawProjects, loading, error, add, update, remove } = useSupabaseCollection<Project>(
     user ? 'projects' : null,
     []
   );
+  const projects = useMemo(() => normalizeProjects(rawProjects), [rawProjects]);
 
   const [isCreating, setIsCreating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);

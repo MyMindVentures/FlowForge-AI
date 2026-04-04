@@ -4,6 +4,7 @@ import { useSupabaseCollection } from '../hooks/useSupabaseCollection';
 import { useAuth } from './AuthContext';
 import { SyncService } from '../services/SyncService';
 import { seedProductionTasksForProject } from '../lib/tasklist/productionTasks';
+import { normalizeProjects } from '../lib/projects/normalizeProject';
 
 interface ProjectContextType {
   projects: Project[];
@@ -59,15 +60,16 @@ const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
  */
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const { user, profile } = useAuth();
-  const isAdmin = profile?.role === 'Admin' || profile?.email === 'lacometta33@gmail.com';
+  const isAdmin = profile?.role === 'Admin';
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(() => {
     return localStorage.getItem('selected_project_id');
   });
 
-  const { data: projects, loading: projectsLoading, add: addProjectDoc, update: updateProjectDoc, set: setProjectDoc } = useSupabaseCollection<Project>(
+  const { data: rawProjects, loading: projectsLoading, add: addProjectDoc, update: updateProjectDoc, set: setProjectDoc } = useSupabaseCollection<Project>(
     user ? 'projects' : null,
     []
   );
+  const projects = normalizeProjects(rawProjects);
 
   const creatingSystemProject = useRef(false);
 

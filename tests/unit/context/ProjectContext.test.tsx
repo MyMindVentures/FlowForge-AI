@@ -56,7 +56,7 @@ describe('ProjectContext', () => {
 
     const { result } = renderHook(() => useProject(), { wrapper });
 
-    expect(result.current.selectedProject).toEqual(mockProjects[0]);
+    expect(result.current.selectedProject).toEqual(expect.objectContaining(mockProjects[0]));
   });
 
   it('setSelectedProject should update state and localStorage', () => {
@@ -78,14 +78,14 @@ describe('ProjectContext', () => {
     });
 
     expect(localStorage.getItem('selected_project_id')).toBe('proj-1');
-    expect(result.current.selectedProject).toEqual(mockProjects[0]);
+    expect(result.current.selectedProject).toEqual(expect.objectContaining(mockProjects[0]));
 
     act(() => {
       result.current.setSelectedProject(null);
     });
 
     expect(localStorage.getItem('selected_project_id')).toBe('proj-1');
-    expect(result.current.selectedProject).toEqual(mockProjects[0]);
+    expect(result.current.selectedProject).toEqual(expect.objectContaining(mockProjects[0]));
   });
 
   it('updateProject should upsert the selected project', async () => {
@@ -107,7 +107,7 @@ describe('ProjectContext', () => {
       await result.current.updateProject({ name: 'Updated' });
     });
 
-    expect(mockSet).toHaveBeenCalledWith('proj-1', { id: 'proj-1', name: 'Updated' });
+    expect(mockSet).toHaveBeenCalledWith('proj-1', expect.objectContaining({ id: 'proj-1', name: 'Updated' }));
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 

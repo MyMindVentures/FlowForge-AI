@@ -4,9 +4,23 @@ import { Settings, Save, Shield, Eye, Globe, Zap, Github, Plus, Trash2, Check, L
 import { Project, ProjectMember, GitHubRepo, UserRole } from '../types';
 import { useToast } from './Toast';
 import { cn } from '../lib/utils';
-import { collection, addDoc } from '../lib/db/supabaseData';
-import { db, auth } from '../lib/supabase/appClient';
+import { auth } from '../lib/supabase/appClient';
 import { AuditService, AuditAction } from '../services/audit';
+import { useAuth } from '../context/AuthContext';
+
+const MEMBER_ROLE_OPTIONS: UserRole[] = ['Architect', 'Builder', 'Admin'];
+
+function normalizeMemberEmail(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function createMemberInviteId(email: string) {
+  return `invite-${email.replace(/[^a-z0-9]+/g, '-')}-${Date.now().toString(36)}`;
+}
+
+function isValidEmailAddress(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
 
 interface ProjectSettingsProps {
   project: Project;
@@ -14,6 +28,9 @@ interface ProjectSettingsProps {
   onBack: () => void;
 }
 
+/**
+ * Manages editable project metadata, member access, and repository settings.
+ */
 export default function ProjectSettings({ project, onUpdate, onBack }: ProjectSettingsProps) {
   const [formData, setFormData] = useState({
     name: project.name,
@@ -26,12 +43,15 @@ export default function ProjectSettings({ project, onUpdate, onBack }: ProjectSe
   const [saveStatus, setSaveStatus] = useState<'idle' | 'dirty' | 'saving' | 'success' | 'error'>('idle');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [newMemberEmail, setNewMemberEmail] = useState('');
+  const [newMemberRole, setNewMemberRole] = useState<UserRole>('Builder');
   const [newRepoUrl, setNewRepoUrl] = useState('');
   const { showToast } = useToast();
+  const { user: authenticatedUser, profile } = useAuth();
 
   const user = auth.currentUser;
-  const isOwner = project.ownerId === user?.uid;
-  const isAdmin = user?.email === 'lacometta33@gmail.com';
+  const currentUser = authenticatedUser ?? user;
+  const isOwner = project.ownerId === currentUser?.uid;
+  const isAdmin = profile?.role === 'Admin';
   const canEdit = isOwner || isAdmin;
 
   // Audit Log Helper
@@ -92,9 +112,7 @@ export default function ProjectSettings({ project, onUpdate, onBack }: ProjectSe
     }
 
     // Permission check (only owner or admin can edit)
-    const user = auth.currentUser;
-    const isOwner = project.ownerId === user?.uid;
-    const isAdmin = user?.email === 'lacometta33@gmail.com'; // Simple admin check for now
+    const isOwner = project.ownerId === currentUser?.uid;
 
     if (!isOwner && !isAdmin) {
       showToast('You do not have permission to edit this project', 'error');
@@ -107,9 +125,9 @@ export default function ProjectSettings({ project, onUpdate, onBack }: ProjectSe
       const user = auth.currentUser;
       const metadata = {
         lastModifiedBy: {
-          uid: user?.uid || 'unknown',
-          email: user?.email || 'unknown',
-          displayName: user?.displayName || undefined,
+          uid: currentUser?.uid || 'unknown',
+          email: currentUser?.email || 'unknown',
+          displayName: currentUser?.displayName || undefined,
           timestamp: new Date().toISOString(),
           action: 'Project settings updated'
         }
@@ -145,15 +163,34 @@ export default function ProjectSettings({ project, onUpdate, onBack }: ProjectSe
     showToast('Changes discarded', 'info');
   };
 
-  const handleAddMember = (e: React.FormEvent) => {
+  const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMemberEmail.trim()) return;
+    const normalizedEmail = normalizeMemberEmail(newMemberEmail);
+
+    if (!normalizedEmail) {
+      showToast('Member email is required.', 'error');
+      return;
+    }
+
+    if (!isValidEmailAddress(normalizedEmail)) {
+      showToast('Enter a valid email address before inviting a member.', 'error');
+      return;
+    }
+
+    const duplicateMember = formData.members.some((member) => normalizeMemberEmail(member.email) === normalizedEmail);
+    if (duplicateMember) {
+      showToast('That member already has access to this project.', 'error');
+      return;
+    }
     
     const newMember: ProjectMember = {
-      uid: Math.random().toString(36).substr(2, 9), // Mock UID for now
-      email: newMemberEmail,
-      role: 'Builder',
-      joinedAt: new Date().toISOString()
+      uid: createMemberInviteId(normalizedEmail),
+      email: normalizedEmail,
+      role: newMemberRole,
+      joinedAt: new Date().toISOString(),
+      status: 'invited',
+      invitedAt: new Date().toISOString(),
+      invitedByEmail: currentUser?.email || undefined,
     };
 
     setFormData(prev => ({
@@ -161,16 +198,46 @@ export default function ProjectSettings({ project, onUpdate, onBack }: ProjectSe
       members: [...prev.members, newMember]
     }));
     setNewMemberEmail('');
-    logChange(AuditAction.MEMBER_ADDED, { email: newMemberEmail });
+    setNewMemberRole('Builder');
+    showToast(`Invitation prepared for ${normalizedEmail}. Save changes to persist it.`, 'success');
+    await logChange(AuditAction.MEMBER_INVITED, { email: normalizedEmail, role: newMemberRole, status: 'invited' });
   };
 
-  const handleRemoveMember = (uid: string) => {
+  const handleRemoveMember = async (uid: string) => {
     const member = formData.members.find(m => m.uid === uid);
+    if (!member) {
+      return;
+    }
+
+    if (uid === project.ownerId) {
+      showToast('The project owner cannot be removed from project access.', 'error');
+      return;
+    }
+
     setFormData(prev => ({
       ...prev,
       members: prev.members.filter(m => m.uid !== uid)
     }));
-    logChange(AuditAction.MEMBER_REMOVED, { email: member?.email });
+    showToast(`${member.email} removed from the pending access list.`, 'info');
+    await logChange(AuditAction.MEMBER_REMOVED, { email: member.email });
+  };
+
+  const handleMemberRoleChange = async (uid: string, role: UserRole) => {
+    const member = formData.members.find((entry) => entry.uid === uid);
+    if (!member || member.role === role) {
+      return;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      members: prev.members.map((entry) => entry.uid === uid ? { ...entry, role } : entry),
+    }));
+    showToast(`Updated ${member.email} to ${role}.`, 'success');
+    await logChange(AuditAction.MEMBER_ROLE_UPDATED, {
+      email: member.email,
+      previousRole: member.role,
+      nextRole: role,
+    });
   };
 
   const handleAddRepo = (e: React.FormEvent) => {
@@ -401,15 +468,32 @@ export default function ProjectSettings({ project, onUpdate, onBack }: ProjectSe
             </div>
 
             <form onSubmit={handleAddMember} className="space-y-4 mb-8">
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                <input 
-                  type="email" 
-                  value={newMemberEmail}
-                  onChange={(e) => setNewMemberEmail(e.target.value)}
-                  placeholder="Invite by email..."
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white focus:outline-none focus:border-indigo-500/50 transition-all"
-                />
+              <div className="grid grid-cols-1 gap-3">
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                  <input 
+                    type="email" 
+                    value={newMemberEmail}
+                    onChange={(e) => setNewMemberEmail(e.target.value)}
+                    placeholder="Invite by email..."
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white focus:outline-none focus:border-indigo-500/50 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Role</label>
+                  <select
+                    aria-label="New member role"
+                    value={newMemberRole}
+                    onChange={(e) => setNewMemberRole(e.target.value as UserRole)}
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-white focus:outline-none focus:border-indigo-500/50 transition-all"
+                  >
+                    {MEMBER_ROLE_OPTIONS.map((role) => (
+                      <option key={role} value={role} className="bg-[#141414] text-white">
+                        {role}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <button 
                 type="submit"
@@ -421,23 +505,56 @@ export default function ProjectSettings({ project, onUpdate, onBack }: ProjectSe
             </form>
 
             <div className="space-y-3">
+              {formData.members.length === 0 && (
+                <div className="p-6 rounded-2xl bg-white/5 border border-white/5 border-dashed text-center text-gray-500 italic">
+                  No project members added yet.
+                </div>
+              )}
               {formData.members.map(member => (
-                <div key={member.uid} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 group">
-                  <div className="flex items-center gap-3">
+                <div key={member.uid} className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 group">
+                  <div className="flex items-center gap-3 min-w-0">
                     <div className="w-10 h-10 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 font-bold">
                       {member.email[0].toUpperCase()}
                     </div>
-                    <div>
-                      <p className="text-sm font-bold text-white truncate max-w-[120px]">{member.email}</p>
-                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{member.role}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-white truncate max-w-[180px]">{member.email}</p>
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{member.role}</span>
+                        <span className={cn(
+                          'px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-widest border',
+                          member.status === 'active'
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                            : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                        )}>
+                          {member.status ?? 'active'}
+                        </span>
+                      </div>
+                      {member.invitedByEmail && (
+                        <p className="text-[10px] text-gray-500 mt-2 truncate">Invited by {member.invitedByEmail}</p>
+                      )}
                     </div>
                   </div>
-                  <button 
-                    onClick={() => handleRemoveMember(member.uid)}
-                    className="p-2 text-gray-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <select
+                      aria-label={`Role for ${member.email}`}
+                      value={member.role}
+                      onChange={(e) => void handleMemberRoleChange(member.uid, e.target.value as UserRole)}
+                      className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-indigo-500/50 transition-all"
+                    >
+                      {MEMBER_ROLE_OPTIONS.map((role) => (
+                        <option key={role} value={role} className="bg-[#141414] text-white">
+                          {role}
+                        </option>
+                      ))}
+                    </select>
+                    <button 
+                      onClick={() => void handleRemoveMember(member.uid)}
+                      className="p-2 text-gray-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                      aria-label={`Remove ${member.email}`}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

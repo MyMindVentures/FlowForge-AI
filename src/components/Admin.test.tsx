@@ -43,25 +43,75 @@ vi.mock('../context/ProjectContext', () => ({
 vi.mock('../context/AuthContext', () => ({
   useAuth: () => ({
     user: { uid: 'admin-id', email: 'admin@test.com' },
-    isAdmin: true,
+    profile: {
+      uid: 'admin-id',
+      email: 'admin@test.com',
+      displayName: 'Admin User',
+      role: 'Admin',
+      organizationName: 'MyMind Ventures'
+    },
+    permissions: ['projects.read', 'projects.write', 'admin.access'],
+    hasPermission: vi.fn(() => true),
     loading: false
   })
 }));
 
 vi.mock('../hooks/useSupabaseCollection', () => ({
   useSupabaseCollection: (path: string) => ({
-    data: path === 'feedback' ? [{
-      id: 'fb-1',
-      userId: 'user-1',
-      userEmail: 'user@test.com',
-      category: 'bug',
-      status: 'new',
-      subject: 'Broken onboarding step',
-      message: 'The continue button does not preserve state.',
-      contextPath: '/projects/p1/workspace',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }] : [],
+    data:
+      path === 'feedback' ? [{
+        id: 'fb-1',
+        userId: 'user-1',
+        userEmail: 'user@test.com',
+        category: 'bug',
+        status: 'new',
+        subject: 'Broken onboarding step',
+        message: 'The continue button does not preserve state.',
+        contextPath: '/projects/p1/workspace',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }] :
+      path === 'admin/auth/providers' ? [{
+        id: 'google',
+        displayName: 'Google',
+        protocol: 'oauth_oidc',
+        category: 'social',
+        availability: 'available',
+        isEnabled: true,
+        supportsDirectClientFlow: true,
+        isEnterprise: false,
+        sortOrder: 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }] :
+      path === 'admin/auth/flows' ? [{
+        id: 'password_sign_in',
+        displayName: 'Password Sign In',
+        flowKind: 'password',
+        isEnabled: true,
+        telemetryEventPrefix: 'auth.password',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }] :
+      path === 'admin/auth/flags' ? [{
+        id: 'auth.enterprise_sso',
+        environment: 'production',
+        isEnabled: true,
+        rolloutPercentage: 100,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }] :
+      path === 'admin/auth/permissions' ? [{
+        permissionKey: 'admin.access',
+        scope: 'admin',
+        description: 'Access the admin control center.',
+        createdAt: new Date().toISOString()
+      }] :
+      path === 'admin/auth/role_permissions' ? [{
+        roleName: 'Admin',
+        permissionKey: 'admin.access',
+        createdAt: new Date().toISOString()
+      }] : [],
     loading: false,
     error: null,
     add: vi.fn(),
@@ -98,6 +148,21 @@ describe('Admin', () => {
     await waitFor(() => {
       expect(feedbackUpdateMock).toHaveBeenCalledWith('fb-1', { status: 'reviewed' });
     });
+  });
+
+  it('shows the access rollout tab with auth data', () => {
+    render(
+      <ToastProvider>
+        <Admin />
+      </ToastProvider>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /access/i }));
+
+    expect(screen.getByText('Access & Identity')).toBeInTheDocument();
+    expect(screen.getByText('MyMind Ventures')).toBeInTheDocument();
+    expect(screen.getByText('Role Permission Matrix')).toBeInTheDocument();
+    expect(screen.getByText('Provider Rollout')).toBeInTheDocument();
   });
 });
 

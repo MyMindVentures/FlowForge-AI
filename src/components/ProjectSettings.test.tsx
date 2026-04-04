@@ -19,12 +19,27 @@ vi.mock('../lib/supabase/appClient', () => ({
   db: {}
 }));
 
+vi.mock('../context/AuthContext', () => ({
+  useAuth: () => ({
+    user: mockUser,
+    profile: {
+      uid: mockUser.uid,
+      email: mockUser.email,
+      role: mockUser.email === 'other@gmail.com' ? 'Builder' : 'Admin'
+    }
+  })
+}));
+
 vi.mock('../services/audit', () => ({
   AuditService: {
     log: vi.fn()
   },
   AuditAction: {
-    PROJECT_UPDATED: 'PROJECT_UPDATED'
+    PROJECT_UPDATED: 'PROJECT_UPDATED',
+    MEMBER_INVITED: 'MEMBER_INVITED',
+    MEMBER_ROLE_UPDATED: 'MEMBER_ROLE_UPDATED',
+    MEMBER_REMOVED: 'MEMBER_REMOVED',
+    REPO_ADDED: 'REPO_ADDED'
   }
 }));
 
@@ -134,6 +149,67 @@ describe('ProjectSettings', () => {
     
     // Reset mock user
     mockUser = { uid: 'user1', email: 'lacometta33@gmail.com', displayName: 'Test User' };
+  });
+
+  it('adds a validated member invite with the selected role and persists it on save', async () => {
+    const onUpdate = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <ToastProvider>
+        <ProjectSettings project={mockProject} onUpdate={onUpdate} onBack={() => {}} />
+      </ToastProvider>
+    );
+
+    fireEvent.change(screen.getByPlaceholderText('Invite by email...'), {
+      target: { value: 'NewUser@Example.com' }
+    });
+    fireEvent.change(screen.getByLabelText('New member role'), {
+      target: { value: 'Admin' }
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /invite member/i }));
+
+    expect(screen.getByText('newuser@example.com')).toBeInTheDocument();
+    expect(screen.getAllByText('Admin')[0]).toBeInTheDocument();
+    expect(screen.getByText('invited')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Save Changes'));
+
+    await waitFor(() => {
+      expect(onUpdate).toHaveBeenCalledWith(expect.objectContaining({
+        members: [expect.objectContaining({
+          email: 'newuser@example.com',
+          role: 'Admin',
+          status: 'invited'
+        })]
+      }));
+    });
+  });
+
+  it('updates an existing member role before save', () => {
+    const projectWithMember = {
+      ...mockProject,
+      members: [{
+        uid: 'member-1',
+        email: 'builder@example.com',
+        role: 'Builder' as const,
+        joinedAt: new Date().toISOString(),
+        status: 'active' as const,
+      }]
+    };
+
+    render(
+      <ToastProvider>
+        <ProjectSettings project={projectWithMember} onUpdate={vi.fn()} onBack={() => {}} />
+      </ToastProvider>
+    );
+
+    fireEvent.change(screen.getByLabelText('Role for builder@example.com'), {
+      target: { value: 'Architect' }
+    });
+
+    expect(screen.getByText('Unsaved Changes')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Architect')).toBeInTheDocument();
   });
 });
 

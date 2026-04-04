@@ -56,6 +56,39 @@ describe('Dashboard', () => {
     );
     expect(screen.getByText('No projects found')).toBeInTheDocument();
   });
+
+  it('renders a Supabase product-model project row in the overview', () => {
+    useSupabaseCollectionMock.mockImplementationOnce(() => ({
+      data: [
+        {
+          id: 'project-1',
+          name: 'FlowForge AI',
+          description: 'Internal product workspace',
+          ownerAuthId: 'owner-1',
+          status: 'active',
+          createdAt: '2026-04-04T00:00:00.000Z',
+          updatedAt: '2026-04-04T00:00:00.000Z',
+        },
+      ],
+      loading: false,
+      error: null,
+      add: vi.fn(),
+      update: vi.fn(),
+      remove: vi.fn(),
+      syncStatus: 'synced',
+    }));
+
+    render(
+      <MemoryRouter>
+        <ToastProvider>
+          <Dashboard onSelectProject={vi.fn()} />
+        </ToastProvider>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('FlowForge AI')).toBeInTheDocument();
+    expect(screen.getAllByText('Active')).toHaveLength(2);
+  });
 });
 
 

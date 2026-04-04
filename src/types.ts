@@ -105,6 +105,63 @@ export type APIKeyConfig = {
   status: 'active' | 'revoked' | 'expired';
 };
 
+export type AuthProviderConfig = {
+  id: string;
+  displayName: string;
+  protocol: 'oauth_oidc' | 'saml_2_0' | 'email' | 'webauthn' | 'totp' | 'sms';
+  category: string;
+  availability: 'available' | 'preview' | 'requires_config';
+  isEnabled: boolean;
+  supportsDirectClientFlow: boolean;
+  isEnterprise: boolean;
+  sortOrder: number;
+  discoveryUrl?: string;
+  domainHint?: string;
+  clientIdEnvVar?: string;
+  secretEnvVar?: string;
+  redirectUrlEnvVar?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AuthFlowDefinition = {
+  id: string;
+  providerConfigId?: string;
+  displayName: string;
+  flowKind: string;
+  isEnabled: boolean;
+  fallbackUx?: Record<string, unknown>;
+  failureStates?: unknown[];
+  telemetryEventPrefix: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AuthFeatureFlag = {
+  id: string;
+  environment: 'all' | 'development' | 'staging' | 'production';
+  isEnabled: boolean;
+  rolloutPercentage: number;
+  config?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PermissionCatalogEntry = {
+  permissionKey: string;
+  scope: string;
+  description: string;
+  createdAt: string;
+};
+
+export type RolePermissionAssignment = {
+  roleName: UserRole;
+  permissionKey: string;
+  createdAt: string;
+};
+
 export type UsageLog = {
   id: string;
   timestamp: string;
@@ -149,6 +206,9 @@ export type ProjectMember = {
   email: string;
   role: UserRole;
   joinedAt: string;
+  status?: 'invited' | 'active';
+  invitedByEmail?: string;
+  invitedAt?: string;
 };
 
 export type GitHubRepo = {

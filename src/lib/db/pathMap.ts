@@ -10,6 +10,9 @@ function normalize(path: string) {
   return path.split('/').filter(Boolean);
 }
 
+/**
+ * Converts an app-level camelCase key into the snake_case database column form.
+ */
 export function camelToSnakeKey(value: string) {
   return value
     .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
@@ -34,6 +37,9 @@ function mapTopLevelCollection(name: string): string {
   }
 }
 
+/**
+ * Resolves an application collection path into its backing table and implicit filters.
+ */
 export function resolveCollectionPath(collectionPath: string): CollectionResolution {
   const parts = normalize(collectionPath);
 
@@ -68,6 +74,23 @@ export function resolveCollectionPath(collectionPath: string): CollectionResolut
         return { table: 'usage_logs', implicitFilters: [] };
       case 'errors':
         return { table: 'error_logs', implicitFilters: [] };
+      default:
+        break;
+    }
+  }
+
+  if (parts[0] === 'admin' && parts[1] === 'auth' && parts.length === 3) {
+    switch (parts[2]) {
+      case 'providers':
+        return { table: 'auth_provider_configs', implicitFilters: [] };
+      case 'flows':
+        return { table: 'auth_flow_definitions', implicitFilters: [] };
+      case 'flags':
+        return { table: 'auth_feature_flags', implicitFilters: [] };
+      case 'permissions':
+        return { table: 'permission_catalog', implicitFilters: [] };
+      case 'role_permissions':
+        return { table: 'role_permissions', implicitFilters: [] };
       default:
         break;
     }
@@ -140,6 +163,9 @@ export function resolveCollectionPath(collectionPath: string): CollectionResolut
   throw new Error(`Unsupported collection path: ${collectionPath}`);
 }
 
+/**
+ * Resolves an application document path into its collection mapping and document id.
+ */
 export function resolveDocumentPath(documentPath: string) {
   const parts = normalize(documentPath);
   if (parts.length < 2 || parts.length % 2 !== 0) {
@@ -154,16 +180,25 @@ export function resolveDocumentPath(documentPath: string) {
   };
 }
 
+/**
+ * Converts a database column name into the app-facing property name.
+ */
 export function dbToAppKey(value: string) {
   if (value === 'photo_url') return 'photoURL';
   return value.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
 }
 
+/**
+ * Converts an app-facing property name into the database column name.
+ */
 export function appToDbKey(value: string) {
   if (value === 'photoURL') return 'photo_url';
   return camelToSnakeKey(value);
 }
 
+/**
+ * Maps a raw database record into the app's camelCase object shape.
+ */
 export function mapDbRecordToApp<T>(record: Record<string, unknown>): T {
   return Object.entries(record).reduce<Record<string, unknown>>((accumulator, [key, value]) => {
     accumulator[dbToAppKey(key)] = value;
@@ -171,6 +206,9 @@ export function mapDbRecordToApp<T>(record: Record<string, unknown>): T {
   }, {}) as T;
 }
 
+/**
+ * Maps an app object into the database's snake_case column shape.
+ */
 export function mapAppRecordToDb(record: Record<string, unknown>) {
   return Object.entries(record).reduce<Record<string, unknown>>((accumulator, [key, value]) => {
     accumulator[appToDbKey(key)] = value;

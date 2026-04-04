@@ -76,7 +76,7 @@ function OnboardingGuard({ children }: { children: React.ReactNode }) {
 
 function AdminGuard({ children }: { children: React.ReactNode }) {
   const { profile } = useAuth();
-  const isAdmin = profile?.role === 'Admin' || profile?.email === 'lacometta33@gmail.com';
+  const isAdmin = profile?.role === 'Admin';
 
   if (!isAdmin) return <Navigate to="/projects" replace />;
   return <>{children}</>;
@@ -328,7 +328,7 @@ function AppRoutes() {
     );
   }
 
-  const isAdmin = profile?.role === 'Admin' || profile?.email === 'lacometta33@gmail.com';
+  const isAdmin = profile?.role === 'Admin';
 
   return (
     <ErrorBoundary>
@@ -433,6 +433,9 @@ function SettingsView() {
   );
 }
 
+/**
+ * Boots the authenticated FlowForge application shell and global providers.
+ */
 export default function App() {
   return (
     <BrowserRouter>

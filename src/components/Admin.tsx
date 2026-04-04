@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { where, orderBy, limit } from '../lib/db/supabaseData';
-import { AIModelConfig, PromptTemplate, APIKeyConfig, UsageLog, ErrorLog, AuditLogEntry, Task, LLMFunction, PRDSection, AuditFinding, ReadinessCheck, FeedbackItem } from '../types';
+import { AIModelConfig, PromptTemplate, APIKeyConfig, UsageLog, ErrorLog, AuditLogEntry, Task, LLMFunction, PRDSection, AuditFinding, ReadinessCheck, FeedbackItem, AuthProviderConfig, AuthFlowDefinition, AuthFeatureFlag, PermissionCatalogEntry, RolePermissionAssignment, UserRole } from '../types';
 import { cn } from '../lib/utils';
 import { useSupabaseCollection } from '../hooks/useSupabaseCollection';
 import { useProject } from '../context/ProjectContext';
@@ -34,16 +34,26 @@ import Tasklist from './admin/Tasklist';
 import IntegrityBadge from './IntegrityBadge';
 import SyncIndicator from './SyncIndicator';
 import { useToast } from './Toast';
+import { useAuth } from '../context/AuthContext';
 
-type AdminTab = 'overview' | 'prd' | 'tasklist' | 'audit' | 'readiness' | 'feedback' | 'models' | 'prompts' | 'functions' | 'keys' | 'logs';
+type AdminTab = 'overview' | 'access' | 'prd' | 'tasklist' | 'audit' | 'readiness' | 'feedback' | 'models' | 'prompts' | 'functions' | 'keys' | 'logs';
 type FeedbackFilter = FeedbackItem['status'] | 'all';
 
+const APP_ROLES: UserRole[] = ['Admin', 'Architect', 'Builder'];
+
+/**
+ * Renders the admin control center for project operations, telemetry, and auth rollout state.
+ */
 export default function Admin() {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [feedbackFilter, setFeedbackFilter] = useState<FeedbackFilter>('all');
   const { showToast } = useToast();
+  const authState = useAuth();
+  const currentPermissions = authState.permissions ?? [];
+  const currentRole = authState.profile?.role ?? null;
+  const organizationName = authState.profile?.organizationName?.trim() || 'Independent workspace';
 
   const { 
     selectedProject, 
@@ -92,6 +102,26 @@ export default function Admin() {
   const { data: feedbackItems, update: updateFeedback } = useSupabaseCollection<FeedbackItem>(
     'feedback',
     [orderBy('createdAt', 'desc'), limit(100)]
+  );
+  const { data: authProviders } = useSupabaseCollection<AuthProviderConfig>(
+    'admin/auth/providers',
+    [orderBy('sort_order', 'asc')]
+  );
+  const { data: authFlows } = useSupabaseCollection<AuthFlowDefinition>(
+    'admin/auth/flows',
+    [orderBy('display_name', 'asc')]
+  );
+  const { data: authFeatureFlags } = useSupabaseCollection<AuthFeatureFlag>(
+    'admin/auth/flags',
+    [orderBy('id', 'asc')]
+  );
+  const { data: permissionCatalog } = useSupabaseCollection<PermissionCatalogEntry>(
+    'admin/auth/permissions',
+    [orderBy('scope', 'asc')]
+  );
+  const { data: rolePermissionAssignments } = useSupabaseCollection<RolePermissionAssignment>(
+    'admin/auth/role_permissions',
+    [orderBy('role_name', 'asc')]
   );
 
   // Automatically select FlowForge AI project if no project is selected
@@ -460,6 +490,278 @@ export default function Admin() {
     </div>
   );
 
+  const renderAccess = () => {
+    const providerCount = authProviders.length;
+    const enabledProviderCount = authProviders.filter((provider) => provider.isEnabled).length;
+    const enabledFlowCount = authFlows.filter((flow) => flow.isEnabled).length;
+    const enabledFlagCount = authFeatureFlags.filter((flag) => flag.isEnabled).length;
+    const permissionMap = APP_ROLES.reduce<Record<UserRole, Set<string>>>((accumulator, role) => {
+      accumulator[role] = new Set(
+        rolePermissionAssignments
+          .filter((assignment) => assignment.roleName === role)
+          .map((assignment) => assignment.permissionKey)
+      );
+      return accumulator;
+    }, {
+      Admin: new Set<string>(),
+      Architect: new Set<string>(),
+      Builder: new Set<string>(),
+    });
+
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
+          {[
+            {
+              label: 'Your Role',
+              value: currentRole ?? 'Unassigned',
+              detail: `${currentPermissions.length} effective permissions`,
+              icon: Shield,
+              tone: 'text-indigo-400 bg-indigo-500/10'
+            },
+            {
+              label: 'Workspace Scope',
+              value: organizationName,
+              detail: selectedProject ? `Project: ${selectedProject.name}` : 'No project selected',
+              icon: Users,
+              tone: 'text-emerald-400 bg-emerald-500/10'
+            },
+            {
+              label: 'Enabled Auth Flows',
+              value: `${enabledFlowCount}/${authFlows.length || 0}`,
+              detail: `${enabledProviderCount} providers currently active`,
+              icon: Key,
+              tone: 'text-amber-400 bg-amber-500/10'
+            },
+            {
+              label: 'Feature Flags',
+              value: `${enabledFlagCount}/${authFeatureFlags.length || 0}`,
+              detail: 'Production rollout controls from Supabase',
+              icon: Zap,
+              tone: 'text-sky-400 bg-sky-500/10'
+            }
+          ].map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <div key={stat.label} className="p-6 rounded-3xl bg-[#141414] border border-white/5 shadow-xl">
+                <div className={cn('w-12 h-12 rounded-2xl flex items-center justify-center mb-4', stat.tone)}>
+                  <Icon size={20} />
+                </div>
+                <p className="text-gray-500 text-xs font-medium mb-1 uppercase tracking-widest">{stat.label}</p>
+                <p className="text-xl font-bold text-white break-words">{stat.value}</p>
+                <p className="text-xs text-gray-500 mt-2">{stat.detail}</p>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <section className="p-8 rounded-3xl bg-[#141414] border border-white/5 shadow-xl space-y-5">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-bold text-white">Access & Identity</h3>
+                <p className="text-sm text-gray-500 mt-1">Read-only visibility into the current auth rollout and role matrix.</p>
+              </div>
+              <span className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-[10px] font-bold uppercase tracking-widest border border-indigo-500/20">
+                Phase 1
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Current Session</p>
+                <p className="text-white font-semibold">{authState.user?.email ?? 'No active user'}</p>
+                <p className="text-xs text-gray-500 mt-1">Role inheritance is currently app-level. Tenant isolation is the next schema phase.</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {currentPermissions.length > 0 ? currentPermissions.map((permission) => (
+                  <span key={permission} className="px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold uppercase tracking-widest text-emerald-400">
+                    {permission}
+                  </span>
+                )) : (
+                  <div className="p-4 rounded-2xl bg-white/5 border border-white/5 border-dashed text-center text-gray-500 italic w-full">
+                    No effective permissions were loaded for this session.
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+
+          <section className="p-8 rounded-3xl bg-[#141414] border border-white/5 shadow-xl space-y-4">
+            <div>
+              <h3 className="text-xl font-bold text-white">Provider Rollout</h3>
+              <p className="text-sm text-gray-500 mt-1">Configured auth entry points, enterprise readiness, and direct-client support.</p>
+            </div>
+
+            <div className="space-y-3 max-h-[420px] overflow-y-auto pr-2 custom-scrollbar">
+              {authProviders.map((provider) => (
+                <div key={provider.id} className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-white font-semibold">{provider.displayName}</p>
+                      <p className="text-xs text-gray-500 mt-1">{provider.protocol} • {provider.category}</p>
+                    </div>
+                    <span className={cn(
+                      'px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border',
+                      provider.isEnabled
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                        : 'bg-white/5 text-gray-500 border-white/10'
+                    )}>
+                      {provider.isEnabled ? 'enabled' : 'disabled'}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-2 py-1 rounded-lg bg-white/5 border border-white/5 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                      {provider.availability}
+                    </span>
+                    {provider.isEnterprise && (
+                      <span className="px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[10px] font-bold uppercase tracking-widest text-amber-400">
+                        enterprise
+                      </span>
+                    )}
+                    {provider.supportsDirectClientFlow && (
+                      <span className="px-2 py-1 rounded-lg bg-sky-500/10 border border-sky-500/20 text-[10px] font-bold uppercase tracking-widest text-sky-400">
+                        direct client flow
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {providerCount === 0 && (
+                <div className="p-12 rounded-3xl bg-[#141414] border border-white/5 border-dashed text-center text-gray-500 italic">
+                  No auth providers are available in the current environment.
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-6">
+          <section className="p-8 rounded-3xl bg-[#141414] border border-white/5 shadow-xl space-y-4">
+            <div>
+              <h3 className="text-xl font-bold text-white">Role Permission Matrix</h3>
+              <p className="text-sm text-gray-500 mt-1">Current app-role grants from Supabase. Project-level member roles are separate and not enforced here yet.</p>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[640px]">
+                <thead>
+                  <tr className="border-b border-white/5">
+                    <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500">Permission</th>
+                    <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500">Scope</th>
+                    {APP_ROLES.map((role) => (
+                      <th key={role} className="px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500">{role}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {permissionCatalog.map((permission) => (
+                    <tr key={permission.permissionKey} className="hover:bg-white/5 transition-colors">
+                      <td className="px-4 py-4 align-top">
+                        <div>
+                          <p className="text-sm font-semibold text-white">{permission.permissionKey}</p>
+                          <p className="text-xs text-gray-500 mt-1">{permission.description}</p>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 align-top text-xs text-gray-400 uppercase tracking-widest">{permission.scope}</td>
+                      {APP_ROLES.map((role) => {
+                        const hasPermission = permissionMap[role].has(permission.permissionKey);
+                        return (
+                          <td key={`${permission.permissionKey}-${role}`} className="px-4 py-4 align-top">
+                            <span className={cn(
+                              'inline-flex px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border',
+                              hasPermission
+                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                : 'bg-white/5 text-gray-500 border-white/10'
+                            )}>
+                              {hasPermission ? 'Allowed' : 'Blocked'}
+                            </span>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {permissionCatalog.length === 0 && (
+              <div className="p-12 rounded-3xl bg-[#141414] border border-white/5 border-dashed text-center text-gray-500 italic">
+                No permission catalog entries were returned from Supabase.
+              </div>
+            )}
+          </section>
+
+          <section className="space-y-6">
+            <div className="p-8 rounded-3xl bg-[#141414] border border-white/5 shadow-xl space-y-4">
+              <div>
+                <h3 className="text-xl font-bold text-white">Auth Flow Definitions</h3>
+                <p className="text-sm text-gray-500 mt-1">Which auth UX paths are enabled in this environment.</p>
+              </div>
+              <div className="space-y-3 max-h-[280px] overflow-y-auto pr-2 custom-scrollbar">
+                {authFlows.map((flow) => (
+                  <div key={flow.id} className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-white font-semibold">{flow.displayName}</p>
+                        <p className="text-xs text-gray-500 mt-1">{flow.flowKind} • telemetry: {flow.telemetryEventPrefix}</p>
+                      </div>
+                      <span className={cn(
+                        'px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border',
+                        flow.isEnabled
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                          : 'bg-white/5 text-gray-500 border-white/10'
+                      )}>
+                        {flow.isEnabled ? 'enabled' : 'disabled'}
+                      </span>
+                    </div>
+                    {flow.notes && <p className="text-xs text-gray-400 mt-3">{flow.notes}</p>}
+                  </div>
+                ))}
+                {authFlows.length === 0 && (
+                  <div className="p-12 rounded-3xl bg-[#141414] border border-white/5 border-dashed text-center text-gray-500 italic">
+                    No auth flows are configured for this environment.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="p-8 rounded-3xl bg-[#141414] border border-white/5 shadow-xl space-y-4">
+              <div>
+                <h3 className="text-xl font-bold text-white">Feature Rollout Flags</h3>
+                <p className="text-sm text-gray-500 mt-1">Deployment gating for passwordless, enterprise, and rollout-sensitive auth capabilities.</p>
+              </div>
+              <div className="space-y-3 max-h-[280px] overflow-y-auto pr-2 custom-scrollbar">
+                {authFeatureFlags.map((flag) => (
+                  <div key={flag.id} className="p-4 rounded-2xl bg-white/5 border border-white/5 flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-white font-semibold">{flag.id}</p>
+                      <p className="text-xs text-gray-500 mt-1">Environment: {flag.environment} • Rollout: {flag.rolloutPercentage}%</p>
+                    </div>
+                    <span className={cn(
+                      'px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border',
+                      flag.isEnabled
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                        : 'bg-white/5 text-gray-500 border-white/10'
+                    )}>
+                      {flag.isEnabled ? 'on' : 'off'}
+                    </span>
+                  </div>
+                ))}
+                {authFeatureFlags.length === 0 && (
+                  <div className="p-12 rounded-3xl bg-[#141414] border border-white/5 border-dashed text-center text-gray-500 italic">
+                    No auth feature flags were returned from Supabase.
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  };
+
   const renderPrompts = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -752,6 +1054,7 @@ export default function Admin() {
         <div className="flex flex-wrap gap-2 p-1 bg-white/5 rounded-2xl w-fit">
           {[
             { id: 'overview', label: 'Overview', icon: BarChart3 },
+            { id: 'access', label: 'Access', icon: Users },
             { id: 'prd', label: 'Full PRD', icon: FileText },
             { id: 'tasklist', label: 'Tasklist', icon: ListTodo },
             { id: 'audit', label: 'Audit', icon: Shield },
@@ -822,6 +1125,7 @@ export default function Admin() {
         transition={{ duration: 0.2 }}
       >
         {activeTab === 'overview' && renderOverview()}
+        {activeTab === 'access' && renderAccess()}
         
         {activeTab === 'prd' && (
           selectedProject ? (
